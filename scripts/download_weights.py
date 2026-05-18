@@ -35,16 +35,6 @@ WEIGHTS = {
         "url": "",
         "sha256": "",
     },
-    "WS2": {
-        "path": "models/checkpoints/WS2/ema_0.9999_150000.pt",
-        "url": "",
-        "sha256": "",
-    },
-    "CrI3": {
-        "path": "models/checkpoints/CrI3/ema_0.9999_200000.pt",
-        "url": "",
-        "sha256": "",
-    },
 }
 
 

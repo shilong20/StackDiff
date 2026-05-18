@@ -1,6 +1,6 @@
 # StackDiff: 多层材料分解与分析
 
-> 基于扩散模型和物理约束的二维材料层分解系统，支持 ReS2、MoS2、MoTe2、TaS2、WS2、CrI3 等材料。
+> 基于扩散模型和物理约束的二维材料层分解系统。论文实验覆盖 ReS2、MoS2、MoTe2、TaS2 四种材料。
 
 本仓库是论文开源版代码工作区：只包含核心代码、公开配置、少量示例数据和结构文件。完整训练数据、完整实验结果和模型权重不放入 Git；每种材料只发布一个推荐 EMA 权重，下载说明见 `docs/download_weights.md`。
 
@@ -17,8 +17,6 @@ models/checkpoints/ReS2/ema_0.9999_200000.pt
 models/checkpoints/MoS2/ema_0.9999_200000.pt
 models/checkpoints/MoTe2/ema_0.9999_200000.pt
 models/checkpoints/TaS2/ema_0.9999_200000.pt
-models/checkpoints/WS2/ema_0.9999_150000.pt
-models/checkpoints/CrI3/ema_0.9999_200000.pt
 ```
 
 运行 ReS2 示例分解：
@@ -50,8 +48,8 @@ python generate_sample/Batch_generate.py --config generate_sample/ReS2.json
 ## ✨ 项目特性
 
 - 🔧 **YAML 驱动**：所有参数集中在配置文件，最小化命令行
-- 🧪 **多材料支持**：`ReS2`、`MoS2`、`TaS2`、`ReS2_MoS2`
-- ⚡ **在线训练**：CPU 数据生成 + GPU 训练，高效利用资源
+- 🧪 **论文材料**：`ReS2`、`MoS2`、`MoTe2`、`TaS2`
+- ⚡ **仿真生成训练样本**：CPU 数据生成 + GPU 训练，高效利用资源
 - 🎯 **物理约束**：DDNM 算子确保输出物理合理性
 - 🔄 **Time-Travel Back**：RePaint 风格增强，提升约束条件下稳定性
 
@@ -82,7 +80,7 @@ python src/core/scripts/image_train.py --config configs/train/ReS2.yml
 
 ```bash
 # 生成样本到 ./sample/ 目录
-python src/core/scripts/image_sample.py --config configs/sample/CrI3.yml
+python src/core/scripts/image_sample.py --config configs/sample/TaS2.yml
 ```
 
 ## 📚 完整命令参考
@@ -190,7 +188,7 @@ separation:
 ```
 
 - 开启自适应时每次迭代都会重新计算 `k`；设置 `fixed_superposition_k` 时则全程复用同一常数。`*_conbine.png` 也使用相同算子，保证与输入观测一致的亮度/对比度。
-- 固定 k 示例（以 `configs/separate/WS2.yml` 为例），建议显式关闭自适应以避免混淆：
+- 固定 k 示例（以 `configs/separate/MoS2.yml` 为例），建议显式关闭自适应以避免混淆：
 
 ```yaml
 separation:

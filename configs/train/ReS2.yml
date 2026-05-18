@@ -1,7 +1,7 @@
-## 在线训练配置（从仿真原始大图中边训练边生成样本）
+## 训练配置（从仿真原始大图中边训练边生成样本）
 
 train:
-  # 在线训练不依赖预裁剪数据集，但 data_dir 仍需占位（不会被使用）
+  # 训练数据由仿真原始大图动态生成；data_dir 仅作兼容占位（不会被使用）
   data_dir: data/placeholder
   output_dir: models/checkpoints/ReS2
   resume_checkpoint: ""

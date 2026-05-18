@@ -13,6 +13,10 @@ result archives are not tracked in Git.
 - `generate_sample/*.xyz`: material structure files required by the synthetic
   generation pipeline.
 
+The public release focuses on the four materials evaluated in the paper:
+ReS2, MoS2, MoTe2, and TaS2. Additional exploratory configs, if present under
+`docs/archived_configs/untested/`, are not part of the reported benchmark.
+
 ## External Tools
 
 The `generate_sample` pipeline expects an external `incostem` executable for
