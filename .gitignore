@@ -19,6 +19,9 @@ trash/
 src/core/sample/
 *.log
 
+# External simulator executable (download/compile locally)
+generate_sample/incostem
+
 # Large model/data artifacts
 models/checkpoints/**/*.pt
 models/checkpoints/**/*.pth

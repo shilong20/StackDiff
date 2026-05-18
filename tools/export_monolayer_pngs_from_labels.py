@@ -19,7 +19,7 @@
 - src/tools/analysis/interlayer_analyzer_res2.py（后续 slip/twist 解析入口）
 
 【命令行用法】
-  python generate_sample/export_monolayer_pngs_from_labels.py --labels_dir data/experiments/ReS2_test2p8nm_slip_labels --out_root data/experiments/ReS2_test2p8nm_mono
+  python tools/export_monolayer_pngs_from_labels.py --labels_dir data/experiments/ReS2_test2p8nm_slip_labels --out_root data/experiments/ReS2_test2p8nm_mono
 （参数：--sigma_px=高斯点 sigma；--overwrite=覆盖已存在输出）
 """
 

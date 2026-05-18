@@ -19,7 +19,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BASE_CONFIG="${PROJECT_ROOT}/configs/separate/ReS2.yml"
 
 # 评估配置
-BATCH_CONFIG="${PROJECT_ROOT}/generate_sample/batch_config.json"
+BATCH_CONFIG="${PROJECT_ROOT}/generate_sample/ReS2.json"
 
 # 采样步数列表
 STEPS=(25 50 100)

@@ -45,7 +45,7 @@ STEM 仿真样本生成：
 python generate_sample/Batch_generate.py --config generate_sample/ReS2.json
 ```
 
-`generate_sample` 需要外部 `incostem` 可执行文件；本仓库不分发该二进制和第三方源码。
+`generate_sample` 需要外部 `incostem` 可执行文件；本仓库不分发该二进制和第三方源码，官方 computem/temsim 项目页为 https://sourceforge.net/projects/computem/files/。
 
 ## ✨ 项目特性
 
@@ -242,55 +242,26 @@ moire/
 
 ## 🧫 generate_sample：STEM 批量仿真（直接输出 PNG）
 
-`generate_sample/` 是一个独立的小工作区，用于基于结构文件（`.xyz`）批量生成 ReS2 双层结构并调用 `incostem` 进行 STEM 仿真，**最终只输出 PNG**，不保留任何中间文件（中间的 `.xyz/.tif` 仅写入系统临时目录，进程结束会自动清理）。
+`generate_sample/` 用于生成四种材料（`ReS2`、`MoS2`、`MoTe2`、`TaS2`）的双层 STEM 仿真 PNG。目录中只保留核心生成入口、材料 JSON、结构文件和 mask；更详细的本地运行说明见 `generate_sample/README.md`。
 
-### 依赖与可执行文件
-- 需要 `generate_sample/incostem`（Linux 可执行文件）。源码在 `generate_sample/source/`，可在 `generate_sample/source/source/temsim` 下用 `make -f makefile.ubuntu incostem` 编译，然后拷贝到 `generate_sample/incostem` 并赋予可执行权限。
-- 需要 Python 依赖：`ase`、`Pillow`（本项目环境一般已具备）。
+`incostem/computem` 是外部依赖，不随本仓库分发。请从官方 computem/temsim 项目下载或编译：
 
-### 配置与运行
-- 编辑配置：`generate_sample/batch_config.json`（或直接使用 `generate_sample/ReS2.json`、`generate_sample/MoS2.json`、`generate_sample/MoTe2.json`、`generate_sample/TaS2.json`）
-  - `output_dir`：最终 PNG 输出目录
-  - `num`：最终输出图像数量；设置后会在给定范围内做随机均匀采样生成 `num` 张（此模式下 `x_range/y_range/rotation_range` 的 `step` 不参与枚举）
-  - `pipeline_mode`：`final`（默认）或 `debug`；`debug` 会额外输出一份 `1644×1024` 的中间图到 `<output_dir>_debug1024/`，但仍在同一次运行里生成最终 `128×128`
-  - `x_range / y_range`：滑移范围与步长（单位：Å）
-  - `rotation_range`：扭角范围与步长（单位：度；若不需要扭角可删除该字段或设为 `null`）
-  - `defect_rates_re`：Re 缺失率（0~1，小数；当前仅允许 1 个元素）
-  - `mask_path`：裁剪安全 mask（默认 `generate_sample/mask/ReS2.png`）
-  - `augment`：与 `configs/train/ReS2.yml:augment` 同构的增强配置（含 `disable`）
-  - 网格枚举模式：如果不设置最外层 `num`，则按 `step` 进行网格枚举；当某个范围的 `step=0` 时，会在 `start` 与 `stop` 之间做等间距取值（可选用该范围内的 `num` 指定点数，含端点，不写则默认 `num=2`）
-- 运行生成（一个入口即可，是否扭角由配置决定）：
+https://sourceforge.net/projects/computem/files/
+
+然后将可执行文件放到 `generate_sample/incostem`，或在材料 JSON 的 `incostem_path` 中填写实际路径。
 
 ```bash
-python3 generate_sample/Batch_generate.py --config generate_sample/TaS2.json
+python generate_sample/Batch_generate.py --config generate_sample/ReS2.json
+python generate_sample/Batch_generate.py --config generate_sample/MoS2.json
+python generate_sample/Batch_generate.py --config generate_sample/MoTe2.json
+python generate_sample/Batch_generate.py --config generate_sample/TaS2.json
 ```
 
-### 可选：导出 GT 原子坐标（labels）
-默认情况下，`generate_sample` **只输出 PNG**。如需在生成时同步保存 GT 原子坐标（用于对比分解结果是否出错），可通过环境变量开启：
+默认只输出 PNG。如需同步保存 GT 原子坐标，可开启：
 
 ```bash
-# 生成 PNG，同时在 <output_dir>_labels/ 下保存每张图的 GT 坐标 npz 与对齐可视化
-MOIRE_SAVE_LABELS=1 python3 generate_sample/Batch_generate.py --config generate_sample/TaS2.json
+MOIRE_SAVE_LABELS=1 python generate_sample/Batch_generate.py --config generate_sample/ReS2.json
 ```
-
-输出目录 `<output_dir>_labels/` 中每张样本对应：
-- `<stem>.npz`：包含 `layer1_xy128/layer2_xy128`（128 坐标系 GT 原子点）、`gt_shift128/sideA/v1A/v2A/meta`
-- `<stem>_gt_align.png`：将 `layer2 - gt_shift` 叠加到 `layer1` 的点云可视化（用于快速人工校验 GT）
-
-其他可选环境变量：
-- `MOIRE_TARGET_STEMS=a,b,c`：仅生成直到命中指定 stem 集合后提前停止（用于复现/补样）
-- `MOIRE_GENERATE_VERBOSE=1`：打印每张样本的增强/GT 信息
-
-### 输出文件命名约定
-输出文件直接落在 `output_dir` 下，命名格式示例：
-`ReS2_r0_gtx12.345_gty-6.789_sideA25.6.png`
-
-- `ReS2`：材料名（来自配置 `material`）
-- `r`：第二层绕 **+z 轴** 旋转角度（度；层间扭角 twist）。若不测扭角则为 `r0`
-- `gtx/gty`：最终 `128×128` 像素坐标系下的滑移 GT（单位：像素；已同步经过增强链路中的 rotate/flip/resize）
-- `sideA`：该 `128×128` patch 对应的物理边长（单位：Å）；因此 `Å/px = sideA / 128`
-- 注意：构造端采样的 `x/y`（Å）与缺陷率 `d` 仍由 `batch_config.json` 控制，但不再写入文件名（避免与 eval 所需 GT 混杂）
-- 输出分辨率：默认输出为增强后的 `128×128`；若 `pipeline_mode=debug`，会额外输出一份仿真中间图（约 `1644×1024`）
 
 ### 一键：分解 + eval（自动多 seed 重试）
 传统流程是：先生成双层 PNG → 手动运行 `python src/main.py ...` 分解 → 再运行 eval 脚本。

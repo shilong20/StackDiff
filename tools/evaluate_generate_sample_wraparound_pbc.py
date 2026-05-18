@@ -164,7 +164,7 @@ except ModuleNotFoundError:
         return v1, v2
 
     def infer_period_vecs_from_centers(_centers: np.ndarray, *, expected_len_px: tuple[float, float]) -> tuple[np.ndarray, np.ndarray]:
-        raise NotImplementedError("infer_period_vecs_from_centers 未实现，使用 batch_config/labels 的周期矢量即可")
+        raise NotImplementedError("infer_period_vecs_from_centers 未实现，使用材料配置/labels 的周期矢量即可")
 
     def infer_period_vecs_from_structure(structure_path: Path) -> tuple[np.ndarray, np.ndarray]:
         # 兼容多材料：用 ASE 读取 Extended XYZ，并在分数坐标系下统计候选平移。
@@ -856,7 +856,7 @@ def load_period_vecs_from_batch_config(path: Path) -> tuple[np.ndarray, np.ndarr
         (t1x, t1y), (t2x, t2y) = defaults[material]
         return np.array([float(t1x), float(t1y)], dtype=np.float64), np.array([float(t2x), float(t2y)], dtype=np.float64)
 
-    structure_path = Path(data.get("structure_path", "generate_sample/one_layer.xyz"))
+    structure_path = Path(data.get("structure_path", "generate_sample/ReS2.xyz"))
     if not structure_path.is_absolute():
         structure_path = (path.parent / structure_path).resolve()
     return base.infer_period_vecs_from_structure(structure_path)
@@ -891,7 +891,7 @@ def _resolve_twist_period_deg(args) -> float:
     """
     优先级：
     1) 显式传入 --twist_period_deg
-    2) batch_config.json 里的 twist_period_deg
+    2) 材料 JSON 里的 twist_period_deg
     3) 默认 180（与历史行为兼容）
     """
     if getattr(args, "twist_period_deg", None) is not None:
@@ -1813,7 +1813,7 @@ def _run_pipeline_decompose_eval_retry(args, *, results_root: Path, out_csv: Pat
 
     # ---------------- twist ----------------
     if task == "twist":
-        # twist_period：优先命令行，其次 batch_config.json，其次默认 180
+        # twist_period：优先命令行，其次材料 JSON，其次默认 180
         args.twist_period_deg = _resolve_twist_period_deg(args)
 
         # 若 period 不一致，则旧 CSV 不可用于 resume：备份后重算
@@ -2427,7 +2427,7 @@ def main() -> int:
     # shift_pbc 参数（保留原行为；twist 也可选用其中的 twist_period_deg）
     ap.add_argument(
         "--batch_config",
-        default="generate_sample/batch_config.json",
+        default="generate_sample/ReS2.json",
         help="generate_sample/*.json 路径。shift_pbc 用于读取二维周期矢量；twist 可选读取 twist_period_deg（若 json 中包含该键）。",
     )
     ap.add_argument("--up_factor", type=int, default=4, help="上采样倍数（默认 4：128->512）")
@@ -2459,7 +2459,7 @@ def main() -> int:
         "--twist_period_deg",
         type=float,
         default=None,
-        help="扭角折叠周期（度）。默认不传时：若 batch_config 含 twist_period_deg 则使用之，否则默认为 180。",
+        help="扭角折叠周期（度）。默认不传时：若材料 JSON 含 twist_period_deg 则使用之，否则默认为 180。",
     )
     ap.add_argument("--twist_thr_rel", type=float, default=0.55, help="中心提取阈值：thr = thr_rel * max（默认 0.55）")
     ap.add_argument(
@@ -2592,7 +2592,7 @@ def main() -> int:
 
     # ---------------- twist ----------------
     if task == "twist":
-        # twist_period：优先命令行，其次 batch_config.json，其次默认 180
+        # twist_period：优先命令行，其次材料 JSON，其次默认 180
         args.twist_period_deg = _resolve_twist_period_deg(args)
 
         # 若 period 不一致，则旧 CSV 不可用于 resume：备份后重算

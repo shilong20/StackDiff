@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-【作用概述】批量生成不同 Re 缺陷率（defect_rates_re）的数据集：逐个修改 `generate_sample/batch_config.json` 中的 defect_rates_re 与 output_dir，
+【作用概述】批量生成不同 Re 缺陷率（defect_rates_re）的数据集：读取材料 JSON 模板，逐个修改 defect_rates_re 与 output_dir，
 并调用 `generate_sample/Batch_generate.py` 生成图片；最终得到多个输出文件夹（每个缺陷率一个）。
 默认启用完整噪声模型（scan+poisson+gaussian），高斯噪声使用 GT 级别 sigma（0.129）。
-【关联说明】文件/模块：generate_sample/batch_config.json；generate_sample/Batch_generate.py；generate_sample/batch_runner.py；
+【关联说明】文件/模块：generate_sample/ReS2.json；generate_sample/Batch_generate.py；generate_sample/batch_runner.py；
 内置噪声参数方案。
-【命令行用法】python tools/generate_defect_datasets.py --config generate_sample/batch_config.json
+【命令行用法】python tools/generate_defect_datasets.py --config generate_sample/ReS2.json
 （参数：--rates=0.05,0.10,...；--output-parent=data/experiments；--no-noise=不加噪声；--keep-config=不恢复原配置）。
 """
 
@@ -48,7 +48,7 @@ def _fmt_rate(rate: float) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="批量生成不同 defect_rates_re 的数据集（每个缺陷率一个文件夹）")
-    ap.add_argument("--config", default="generate_sample/batch_config.json", help="batch_config.json 路径")
+    ap.add_argument("--config", default="generate_sample/ReS2.json", help="材料 JSON 配置模板路径")
     ap.add_argument("--rates", default="0.05,0.10,0.15,0.20", help="缺陷率列表（逗号分隔）")
     ap.add_argument(
         "--output-parent",
@@ -61,7 +61,7 @@ def main() -> int:
         help="输出目录名前缀（默认 ReS2_defect，将生成 ReS2_defect0.05 等）",
     )
     ap.add_argument("--no-noise", action="store_true", help="不添加噪声（默认添加 GT 级别的完整噪声模型）")
-    ap.add_argument("--keep-config", action="store_true", help="不恢复原 batch_config.json（默认会恢复）")
+    ap.add_argument("--keep-config", action="store_true", help="兼容旧参数；当前脚本只写临时配置，不会修改原材料 JSON")
     ap.add_argument("--dry-run", action="store_true", help="只打印将要生成的目录，不实际运行")
     args = ap.parse_args()
 
@@ -137,4 +137,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

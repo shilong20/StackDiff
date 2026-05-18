@@ -1,7 +1,7 @@
 """
-【作用概述】基于 incostem 将单层原子结构构造成双层（层间平移/可选扭角）并仿真成像，按在线增强配置生成最终 128×128 PNG；可选导出原子坐标 labels 与对齐可视化，用于验证 GT 滑移。
-【关联说明】文件/模块：generate_sample/Batch_generate.py；generate_sample/batch_config.json；generate_sample/*.xyz（如 ReS2.xyz/MoS2.xyz/MoTe2.xyz/TaS2.xyz）；generate_sample/incostem；generate_sample/mask/*.png；src/data_prep/online_augmentor.py。
-【命令行用法】不直接作为主脚本运行；通过 `python generate_sample/Batch_generate.py --config generate_sample/batch_config.json` 调用
+【作用概述】基于 incostem 将单层原子结构构造成双层（层间平移/可选扭角）并仿真成像，按增强配置生成最终 128×128 PNG；可选导出原子坐标 labels 与对齐可视化，用于验证 GT 滑移。
+【关联说明】文件/模块：generate_sample/Batch_generate.py；generate_sample/{ReS2,MoS2,MoTe2,TaS2}.json；generate_sample/*.xyz；generate_sample/incostem；generate_sample/mask/*.png；src/data_prep/online_augmentor.py。
+【命令行用法】不直接作为主脚本运行；通过 `python generate_sample/Batch_generate.py --config generate_sample/ReS2.json` 调用
 （可选字段：`period.mode`/`period.t1_A`/`period.t2_A`/`lattice_basis_symbol`/`incostem_exclude_symbols`；
 环境变量：`MOIRE_SAVE_LABELS=1` 导出 labels；
 `MOIRE_SAVE_MONOLAYER=1` 额外导出单层图（每样本一个子文件夹，内含 *_0.png/*_1.png，可直接用于后处理/测试）；
@@ -30,7 +30,7 @@ from PIL import Image
 
 
 # incostem 输出是非正方形：高度基本等于这里的 image_size，
-# 宽度会按晶胞长宽比自动缩放。以当前 ReS2 的 one_layer.xyz 为例，
+# 宽度会按晶胞长宽比自动缩放。以当前 ReS2.xyz 为例，
 # 设为 1024 时输出约为 1644x1024。
 DEFAULT_IMAGE_SIZE = 1024
 TARGET_SIZE = 128
@@ -425,7 +425,7 @@ def _augment_and_track_gt(
     if bool(params.get("elastic.enabled", False)) or bool(params.get("perspective.enabled", False)):
         raise ValueError(
             "当前配置启用了 elastic/perspective（非仿射），会破坏“单一 shift GT”的假设。"
-            "请在 batch_config.json 的 augment.disable 中加入 'elastic' 和 'perspective'（或将其范围设为 0）。"
+            "请在材料 JSON 配置的 augment.disable 中加入 'elastic' 和 'perspective'（或将其范围设为 0）。"
         )
 
     # 1) 弹性/透视（仅作用于图像）
@@ -670,7 +670,12 @@ def run_batch(cfg: BatchConfig) -> None:
     if not structure_path.exists():
         raise FileNotFoundError(f"structure_path 不存在: {structure_path}")
     if not incostem_path.exists():
-        raise FileNotFoundError(f"incostem_path 不存在: {incostem_path}")
+        raise FileNotFoundError(
+            f"incostem_path 不存在: {incostem_path}\n"
+            "StackDiff 不随仓库分发 incostem/computem。请从官方项目下载或编译 incostem，"
+            "然后放到 generate_sample/incostem，或在材料 JSON 的 incostem_path 中填写实际路径。\n"
+            "官方项目页：https://sourceforge.net/projects/computem/files/"
+        )
     if not mask_path.exists():
         raise FileNotFoundError(f"mask_path 不存在: {mask_path}")
 

@@ -19,7 +19,7 @@ cd "$PROJECT_ROOT"
 GPU_ID="${GPU_ID:-0}"
 STEP="${STEP:-200}"
 SEED="${SEED:-1234}"
-BATCH_CONFIG="${PROJECT_ROOT}/generate_sample/batch_config.json"
+BATCH_CONFIG="${PROJECT_ROOT}/generate_sample/ReS2.json"
 BASE_CONFIG="${PROJECT_ROOT}/configs/separate/ReS2.yml"
 DATA_BASE="${PROJECT_ROOT}/data/experiments"
 

@@ -11,7 +11,7 @@
 
 【关联说明】文件/模块：
 - generate_sample/Batch_generate.py（批量生成；需设置环境变量 MOIRE_SAVE_LABELS=1）
-- generate_sample/export_monolayer_pngs_from_labels.py（从 labels 快速导出单层 PNG，避免额外 incostem 成像）
+- tools/export_monolayer_pngs_from_labels.py（从 labels 快速导出单层 PNG，避免额外 incostem 成像）
 - tools/pred_dadb/pipeline_bilayer_root.py（当前 dadb/原点/分类入口，输出 512 坐标系）
 
 【命令行用法】
@@ -105,7 +105,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--num", type=int, default=50)
     ap.add_argument("--seed", type=int, default=123)
-    ap.add_argument("--template_config", default="generate_sample/batch_config_test_res2_2p8nm_slip.json")
+    ap.add_argument("--template_config", default="generate_sample/ReS2.json")
     ap.add_argument("--work_dir", default="", help="输出工作目录（默认 data/experiments/ReS2_eval_slip_<stamp>/）")
     ap.add_argument("--incostem_monolayer", action="store_true", help="生成时额外用 incostem 导出单层图（更慢，但更像真实 HAADF）")
     ap.add_argument("--mono_sigma_px", type=float, default=0.6, help="从 labels 光栅化单层图时的高斯点 sigma（像素）")
@@ -176,7 +176,7 @@ def main() -> int:
         subprocess.run(
             [
                 sys.executable,
-                str(_REPO_ROOT / "generate_sample" / "export_monolayer_pngs_from_labels.py"),
+                str(_REPO_ROOT / "tools" / "export_monolayer_pngs_from_labels.py"),
                 "--labels_dir",
                 str(labels_dir),
                 "--out_root",
