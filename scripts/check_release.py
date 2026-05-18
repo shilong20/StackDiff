@@ -1,6 +1,6 @@
 """
 【作用概述】检查 StackDiff 待发布工作区是否误包含大文件、模型权重、压缩包、办公文档、baseline 目录或本机绝对路径；输出问题列表并以非零状态码提示发布前需要处理。
-【关联说明】文件/模块：.gitignore（发布忽略规则）；configs/*.yml（权重路径检查）；docs/download_weights.md（公开权重路径约定）。
+【关联说明】文件/模块：.gitignore（发布忽略规则）；configs/*.yml（权重路径检查）；README.md 与 models/checkpoints/README.md（公开权重路径约定）。
 【命令行用法】python scripts/check_release.py（参数：无需参数；在仓库根目录运行）
 """
 

@@ -4,7 +4,7 @@
 并调用 `generate_sample/Batch_generate.py` 生成图片；最终得到多个输出文件夹（每个缺陷率一个）。
 默认启用完整噪声模型（scan+poisson+gaussian），高斯噪声使用 GT 级别 sigma（0.129）。
 【关联说明】文件/模块：generate_sample/batch_config.json；generate_sample/Batch_generate.py；generate_sample/batch_runner.py；
-docs/noise_robustness_params.md（噪声参数方案）。
+内置噪声参数方案。
 【命令行用法】python tools/generate_defect_datasets.py --config generate_sample/batch_config.json
 （参数：--rates=0.05,0.10,...；--output-parent=data/experiments；--no-noise=不加噪声；--keep-config=不恢复原配置）。
 """
@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-# GT 噪声参数（与 docs/noise_robustness_params.md 一致）
+# GT 噪声参数（与论文噪声鲁棒性实验参数一致）
 GT_NOISE_CONFIG = {
     "mode": "full",
     "pixel_size_A_orig": 0.12,

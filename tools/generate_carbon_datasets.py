@@ -3,7 +3,7 @@
 【作用概述】基于一份"基准图像目录"（通常是无碳堆积的 128×128 PNG），为多个碳堆积强度 alpha 生成新数据集目录；
 每张图都会确定性地施加碳堆积（prob=1.0），默认同时叠加 GT 级别噪声（scan+poisson+gaussian），输出文件名保持不变。
 【关联说明】文件/模块：src/data_prep/online_augmentor.py（add_carbon_background, add_gaussian_noise 等）；
-data/experiments/（默认输入/输出父目录）；docs/noise_robustness_params.md（噪声参数方案）。
+data/experiments/（默认输入/输出父目录）；内置噪声参数方案。
 【命令行用法】python tools/generate_carbon_datasets.py --input_dir data/experiments/ReS2_noise0_defect0
   --output_parent data/experiments
   （参数：--alphas=要测试的 alpha 列表；--cover=固定覆盖面积比；--no-noise=不加噪声；--seed=随机种子）。
@@ -33,7 +33,7 @@ from data_prep.online_augmentor import (  # type: ignore  # noqa: E402
     add_scan_noise_from_original,
 )
 
-# GT 噪声参数（与 docs/noise_robustness_params.md 一致）
+# GT 噪声参数（与论文噪声鲁棒性实验参数一致）
 SIGMA_GT = 0.129
 SCAN_POISSON_PARAMS = {
     "pixel_size_A_orig": 0.12,

@@ -2,7 +2,7 @@
 
 > 基于扩散模型和物理约束的二维材料层分解系统。论文实验覆盖 ReS2、MoS2、MoTe2、TaS2 四种材料。
 
-本仓库是论文开源版代码工作区：只包含核心代码、公开配置、少量示例数据和结构文件。完整训练数据、完整实验结果和模型权重不放入 Git；每种材料只发布一个推荐 EMA 权重，下载说明见 `docs/download_weights.md`。
+本仓库是论文开源版代码工作区：只包含核心代码、公开配置、少量示例数据和结构文件。完整训练数据、完整实验结果和模型权重不放入 Git；每种材料只发布一个推荐 EMA 权重。
 
 ## 快速开始
 
@@ -45,7 +45,7 @@ STEM 仿真样本生成：
 python generate_sample/Batch_generate.py --config generate_sample/ReS2.json
 ```
 
-`generate_sample` 需要外部 `incostem` 可执行文件；本仓库不分发该二进制和第三方源码，详见 `docs/data_examples.md`。
+`generate_sample` 需要外部 `incostem` 可执行文件；本仓库不分发该二进制和第三方源码。
 
 ## ✨ 项目特性
 
@@ -446,16 +446,6 @@ python tools/analyze_training_loss.py \
 - `data/results/<Material>/<图片名>/`：分解输出
 - `data/仿真数据集/`：在线训练的原始显微图与 mask（匹配 `train 配置中的数据生成段` 配置）
 - `models/checkpoints/<model>/ema_*.pt`：规范化模型权重
-
-## 📚 深入了解
-
-- **[设计理念与架构](CLAUDE.md)**：了解项目的设计哲学、架构决策和扩展性考虑
-  - YAML 驱动配置的设计权衡
-  - 物理先验 vs 数据驱动的冲突解决
-  - 核心约束与权衡
-  - 版本演进历史
-- **[配置详解](configs/)**：查看不同任务的配置模板
-- **[API 文档](docs/)**：详细的技术文档和算法说明
 
 ## 📄 许可证
 

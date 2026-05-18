@@ -2,7 +2,7 @@
 """
 【作用概述】对已有的无噪声 PNG 数据集目录叠加 GT 级别的完整噪声模型（scan+poisson+gaussian），输出到新目录或覆盖原目录。
 适用于跨材料泛化性实验等已有 clean 数据集需要统一添加噪声的场景。
-【关联说明】文件/模块：src/data_prep/online_augmentor.py；docs/noise_robustness_params.md（噪声参数方案）。
+【关联说明】文件/模块：src/data_prep/online_augmentor.py；内置噪声参数方案。
 【命令行用法】python tools/add_gt_noise_to_datasets.py \
     --input_dirs data/experiments/MoS2_rotation data/experiments/MoS2_slip ... \
     [--output_parent data/experiments/cross_material] \

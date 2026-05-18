@@ -4,7 +4,7 @@
 dopant_rates_re 与 output_dir，并调用 `generate_sample/Batch_generate.py` 生成图片；最终得到多个输出文件夹（每个掺杂率一个）。
 默认启用完整噪声模型（scan+poisson+gaussian），高斯噪声使用 GT 级别 sigma（0.129）。
 【关联说明】文件/模块：generate_sample/batch_config.json；generate_sample/Batch_generate.py；generate_sample/batch_runner.py；
-docs/noise_robustness_params.md（噪声参数方案）。
+内置噪声参数方案。
 【命令行用法】python tools/generate_dopant_datasets.py --config generate_sample/batch_config.json（参数：--rates=0.05,0.10,...；
 --output-parent=data/experiments；--no-noise=不加噪声；--keep-config=不恢复原配置）。
 """

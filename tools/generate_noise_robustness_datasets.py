@@ -2,7 +2,7 @@
 """
 【作用概述】基于无噪声基准图目录，为 5 个噪声鲁棒性档次生成含完整噪声模型（扫描+泊松+高斯）的数据集目录；
 PSNR(vs GT) 为整数，sigma_total 由校准表确定，输出文件名与输入保持一致。
-【关联说明】文件/模块：src/data_prep/online_augmentor.py；docs/noise_robustness_params.md（校准参数）；
+【关联说明】文件/模块：src/data_prep/online_augmentor.py；内置校准参数；
 tools/generate_noise_datasets_by_psnr.py（旧版纯高斯方案）。
 【命令行用法】python tools/generate_noise_robustness_datasets.py \
     --input_dir data/experiments/ReS2_noise0_defect0 \
@@ -36,13 +36,13 @@ from data_prep.online_augmentor import (  # type: ignore  # noqa: E402
 # ---------------------------------------------------------------------------
 # 校准表：PSNR(vs GT) → sigma_total（含最小扫描+泊松背景）
 # GT 图使用 sigma_1 = 0.120（PSNR(vs clean) ≈ 20 dB）
-# 详见 docs/noise_robustness_params.md
+# 参数见本文件中的校准表
 # ---------------------------------------------------------------------------
 SIGMA_1 = 0.129  # GT 高斯噪声 sigma（校准于 1000 张 ReS2 图，平均 PSNR(vs clean)=20 dB）
 
 # sigma_2: 在 GT 上叠加的额外高斯噪声
 # sigma_total = sqrt(sigma_1^2 + sigma_2^2)，用于一步法从 clean 生成
-# 校准于 100 张 ReS2 图（从 1000 张中采样），见 docs/noise_robustness_params.md
+# 校准于 100 张 ReS2 图（从 1000 张中采样），见本文件中的校准表
 PSNR_VS_GT_TO_SIGMA2: Dict[int, float] = {
     35: 0.021,
     34: 0.023,
