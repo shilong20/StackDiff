@@ -1,0 +1,34 @@
+# ReS2 材料分解配置（统一格式）
+material: ReS2
+description: "硫化铼(ReS2)双层材料分解"
+
+runtime:
+  gpu: 0
+
+sampling:
+  batch_size: 1
+  T_sampling: 500
+  time_travel:
+    enable: true
+    travel_length: 1
+    travel_repeat: 1
+
+separation:
+  num_layers: 4
+  method: separate_sum   # 唯一支持的分离方法
+  eta: 0.85
+  sigma_y: 0.2
+  simplified: true
+
+processing:
+  auto_crop:
+    enabled: true
+    unit_size_range: [2.4, 4.8]
+  sliding_window: true   # 设为 false 可禁用滑窗（使用整块推理）
+  selected_files:
+    - "four_layers.png"
+
+paths:
+  model_checkpoint: "models/checkpoints/neo_ReS2_atom_loss/ema_0.9999_160000.pt"
+  default_input: "data/multilayer/ReS2"   # 多层待分解图像已迁移至 data/multilayer
+  default_output: "data/results/ReS2"

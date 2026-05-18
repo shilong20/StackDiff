@@ -1,0 +1,103 @@
+## 消融实验：禁用 noise（扫描噪声 + 泊松 + 高斯）
+
+train:
+  data_dir: data/online_placeholder
+  output_dir: models/checkpoints/ReS2_online_no_noise
+  resume_checkpoint: ""
+
+  gpu: 0
+  batch_size: 32
+  lr: 1e-4
+  microbatch: -1
+  use_fp16: true
+  ema_rate: "0.9999"
+  schedule_sampler: uniform
+  log_interval: 10
+  save_interval: 10000
+  lr_anneal_steps: 100000
+  max_steps: 100000
+
+model:
+  image_size: 128
+  num_channels: 256
+  num_res_blocks: 2
+  attention_resolutions: "32,16,8"
+  dropout: 0.1
+  class_cond: false
+  use_scale_shift_norm: true
+  resblock_updown: true
+  num_heads: 4
+  num_head_channels: -1
+  num_heads_upsample: -1
+  learn_sigma: true
+  use_fp16: true
+  use_new_attention_order: false
+  diffusion_steps: 1000
+  noise_schedule: linear
+  timestep_respacing: ""
+  use_kl: false
+  predict_xstart: false
+  rescale_timesteps: false
+  rescale_learned_sigmas: false
+
+online:
+  enable: true
+  data_root: data/仿真数据集/ReS2
+  mask_path: data/仿真数据集/ReS2/mask.png
+  mask_cache: data/仿真数据集/ReS2/mask_cache.npz
+  num_workers: 64
+  prefetch_factor: 3
+  pin_memory: true
+  persistent_workers: true
+
+augment:
+  disable: [noise]
+  elastic:
+    alpha_ratio: [0.0, 0.2]
+    sigma_ratio: 0.05
+  perspective:
+    max_ratio: [0.0, 0.015]
+  carbon:
+    prob: 0.01
+    cover: [0.3, 0.7]
+    alpha: [0.3, 0.5]
+    sigma_mask: 100
+    sigma_field: 100
+    coarse_down: 100
+    focus_enable: true
+    focus_center: [0.1, 0.9]
+    focus_radius_ratio: [0.3, 0.7]
+    focus_gain: 5.0
+    morph_kernel: 11
+    morph_iter: 1
+  rotate:
+    range: [0, 360]
+  crop:
+    side: [372, 744]
+    safe_radius: 372
+  flip:
+    h_prob: 0.5
+    v_prob: 0.5
+  edge_mask:
+    prob: 0.0005
+    bg_min: 0.0
+    bg_max: 0.05
+  noise:
+    pixel_size_A_orig: 0.12
+    beam_current_A: 3.0e-11
+    dwell_time_s: [1.0e-6, 3.0e-6]
+    width_orig_px: 3289
+    sigma_jitter_A: [0.0, 0.2]
+    line_freq_hz: 60.0
+    phase_x: 0.0
+    phase_y: 1.5707963267948966
+    gaussian_sigma: [0.0, 0.1]
+  display:
+    gain: [0.8, 1.1]
+    bias: [-0.1, 0.1]
+    gamma: [0.9, 1.2]
+
+save_samples:
+  enable: false
+  dir: data/online_training/ReS2_online
+  format: png

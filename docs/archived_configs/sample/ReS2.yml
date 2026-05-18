@@ -1,0 +1,42 @@
+## 采样配置（示例：ReS2）
+
+paths:
+  # 采样所用权重
+  model_path: models/checkpoints/neo_ReS2_atom_loss/ema_0.9999_160000.pt
+  # 输出目录（保存 npz 与逐张 png）
+  output_dir: data/sample/ReS2
+
+runtime:
+  gpu: 0  # 与 nvidia-smi 对齐的 GPU 序号，-1 表示不强制
+
+sample:
+  num_samples: 4      # 生成样本总数
+  batch_size: 4        # 每次生成批量大小
+  clip_denoised: true  # 是否裁剪反噪结果
+  use_ddim: true       # 默认使用 DDIM 采样
+  steps: 200           # 采样步数
+
+model:
+  # 模型与扩散过程参数（与训练对齐）
+  image_size: 128
+  num_channels: 256
+  num_res_blocks: 2
+  attention_resolutions: "32,16,8"
+  dropout: 0.0
+  class_cond: false
+  use_scale_shift_norm: true
+  resblock_updown: true
+  num_heads: 4
+  num_head_channels: -1
+  num_heads_upsample: -1
+  learn_sigma: true
+  use_fp16: true
+  use_new_attention_order: false
+
+  diffusion_steps: 1000
+  noise_schedule: linear
+  timestep_respacing: "200"   # 对应 parm.sh 的 --timestep_respacing 200（可被 sample.steps 覆盖）
+  use_kl: false
+  predict_xstart: false
+  rescale_timesteps: false
+  rescale_learned_sigmas: false

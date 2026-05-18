@@ -1,0 +1,39 @@
+# CrI3 材料分解配置（统一格式）
+material: CrI3
+description: "仿真铬碘化物(CrI3)材料分解"
+
+runtime:
+  gpu: 0
+
+sampling:
+  batch_size: 1
+  T_sampling: 500
+  time_travel:
+    enable: true
+    travel_length: 1
+    travel_repeat: 1
+
+separation:
+  num_layers: 2
+  method: separate_sum
+  eta: 0.85
+  sigma_y: 0.
+  simplified: true
+  adaptive_superposition: false # 自适应叠加
+  fixed_superposition_k: 0.5 # 固定叠加系数
+  residual_debug: false  # 残差调试日志
+
+processing:
+  auto_crop:
+    enabled: true
+    unit_size_range: [2.4, 4.8]
+  sliding_window: true   # 设为 false 可禁用滑窗（加快推理，但可能出现边缘效应）
+
+  # 指定处理的文件列表（可选）
+  # selected_files:
+  #   - "bilayer_000999.png"
+
+paths:
+  model_checkpoint: "models/checkpoints/CrI3/ema_0.9999_200000.pt"
+  default_input: "data/examples/slip_psnr24/CrI3"
+  default_output: "outputs/separation/CrI3"

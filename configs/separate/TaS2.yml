@@ -1,0 +1,32 @@
+# TaS2 材料分解配置（统一格式）
+material: TaS2
+description: "二硫化钽(TaS2)双层材料分解"
+
+runtime:
+  gpu: 1
+
+sampling:
+  batch_size: 1
+  T_sampling: 200
+  time_travel:
+    enable: true
+    travel_length: 1
+    travel_repeat: 1
+
+separation:
+  num_layers: 2
+  method: separate_sum
+  eta: 0.85
+  sigma_y: 0.
+  simplified: true
+
+processing:
+  auto_crop:
+    enabled: false
+    unit_size_range: [2.4, 4.8]
+  sliding_window: true   # 设为 false 可禁用滑窗（使用整块推理）
+
+paths:
+  model_checkpoint: "models/checkpoints/TaS2/ema_0.9999_200000.pt"
+  default_input: "data/examples/slip_psnr24/TaS2"
+  default_output: "outputs/separation/TaS2"

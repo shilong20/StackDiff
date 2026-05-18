@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Local environments
+.venv/
+venv/
+env/
+
+# Runtime outputs
+data/results/
+data/sample/
+outputs/
+logs/
+tmp/
+trash/
+*.log
+
+# Large model/data artifacts
+models/checkpoints/**/*.pt
+models/checkpoints/**/*.pth
+models/checkpoints/**/*.ckpt
+models/checkpoints/**/*.safetensors
+*.onnx
+*.npz
+*.tar
+*.tar.gz
+*.zip
+
+# Office/source artifacts not intended for the code release
+*.docx
+*.pptx
+
+# External baseline workspaces
+DCGAN-tensorflow/
+pgdgan/

@@ -1,0 +1,34 @@
+# 消融实验：禁用 display 的分解配置
+material: ReS2_sim
+description: "消融实验：禁用显示风格变换增强的 ReS2 分解"
+
+runtime:
+  gpu: 0
+
+sampling:
+  batch_size: 1
+  T_sampling: 100
+  time_travel:
+    enable: true
+    travel_length: 1
+    travel_repeat: 1
+
+separation:
+  num_layers: 2
+  method: separate_sum
+  eta: 0.85
+  sigma_y: 0.
+  simplified: true
+  adaptive_superposition: true
+  residual_debug: false
+
+processing:
+  auto_crop:
+    enabled: true
+    unit_size_range: [2.4, 4.8]
+  sliding_window: true
+
+paths:
+  model_checkpoint: "models/checkpoints/ReS2_online_no_display/ema_0.9999_170000.pt"
+  default_input: "SI/ablation_input/no_display"
+  default_output: "SI/ablation_results/no_display"

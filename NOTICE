@@ -1,0 +1,11 @@
+StackDiff includes code adapted from or inspired by the following projects:
+
+- OpenAI guided-diffusion: https://github.com/openai/guided-diffusion
+- DDNM / SVD-DDNM implementations and related diffusion inverse-problem code.
+- Optional baseline comparisons in the paper use external projects including
+  PGDGAN and DCGAN-tensorflow. Their source trees are not vendored in this
+  release; see docs/baselines.md for reproduction notes and upstream links.
+
+STEM simulation tools such as incostem/computem are external dependencies and
+are not distributed as part of this repository. See docs/data_examples.md and
+generate_sample documentation for setup notes.

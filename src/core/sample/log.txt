@@ -1,0 +1,9 @@
+Logging to ./sample
+creating model and diffusion...
+sampling...
+created 2 samples
+created 4 samples
+saving to ./sample/samples_4x128x128.npz
+saving individual images...
+saved 4 individual images to ./sample/raw
+sampling complete

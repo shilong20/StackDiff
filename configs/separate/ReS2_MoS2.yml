@@ -1,0 +1,40 @@
+# ReS2_MoS2 混合材料分解配置（统一格式）
+material: ReS2_MoS2
+description: "硫化铼(ReS2)与二硫化钼(MoS2)混合材料分解"
+
+runtime:
+  gpu: 0
+
+sampling:
+  batch_size: 1
+  T_sampling: 200
+  time_travel:
+    enable: true
+    travel_length: 1
+    travel_repeat: 1
+
+separation:
+  num_layers: 2
+  method: separate_sum
+  eta: 0.85
+  sigma_y: 0.0
+  simplified: true
+  adaptive_superposition: true  # 自适应叠加
+  residual_debug: false  # 残差调试日志
+
+processing:
+  auto_crop:
+    enabled: true
+    unit_size_range: [2.6, 3.0]
+  sliding_window: true   # 设为 false 可禁用滑窗（使用整块推理）
+
+  # selected_files:
+  #   - "example.png"
+
+paths:
+  # 每层指定对应模型权重（索引与层对应）
+  model_checkpoints:
+    - "models/checkpoints/ReS2_online/ema_0.9999_200000.pt"
+    - "models/checkpoints/MoS2/ema_0.9999_200000.pt"
+  default_input: "data/examples/slip_psnr24/ReS2_MoS2"
+  default_output: "outputs/separation/ReS2_MoS2"

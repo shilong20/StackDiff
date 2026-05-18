@@ -1,0 +1,108 @@
+## 在线训练配置（从仿真原始大图中边训练边生成样本）
+
+train:
+  # 在线训练不依赖预裁剪数据集，但 data_dir 仍需占位（不会被使用）
+  data_dir: data/online_placeholder
+  output_dir: models/checkpoints/CrI3
+  resume_checkpoint: ""
+
+  gpu: 1  # 与 nvidia-smi 中的物理卡编号保持一致
+  batch_size: 56
+  lr: 1e-4
+  microbatch: -1
+  use_fp16: true
+  ema_rate: "0.9999"
+  schedule_sampler: uniform
+  log_interval: 10
+  save_interval: 10000
+  lr_anneal_steps: 200000
+  max_steps: 200000
+
+model:
+  image_size: 128
+  num_channels: 256
+  num_res_blocks: 2
+  attention_resolutions: "32,16,8"
+  dropout: 0.1
+  class_cond: false
+  use_scale_shift_norm: true
+  resblock_updown: true
+  num_heads: 4
+  num_head_channels: -1
+  num_heads_upsample: -1
+  learn_sigma: true
+  use_fp16: true
+  use_new_attention_order: false
+  diffusion_steps: 1000
+  noise_schedule: linear
+  timestep_respacing: ""
+  use_kl: false
+  predict_xstart: false
+  rescale_timesteps: false
+  rescale_learned_sigmas: false
+
+# 在线数据与增强配置
+online:
+  enable: true
+  data_root: data/仿真数据集/CrI3
+  mask_path: data/仿真数据集/CrI3/mask.png
+  mask_cache: 
+  num_workers: 64           # 使用64个进程并行生成数据
+  prefetch_factor: 3       # 限制预取深度，避免首批写入过多图像导致等待
+  pin_memory: true          # 更快的 CPU→GPU 传输
+  persistent_workers: true  # 减少进程重复创建开销
+
+augment:
+  disable: ["edge_mask"]  # 可填入需要禁用的增强步骤，例如 [noise, carbon]
+  # 弹性形变
+  elastic:
+    alpha_ratio: [0.0, 0.2]
+    sigma_ratio: 0.05
+  # 透视变换
+  perspective:
+    max_ratio: [0.0, 0.015]
+  carbon:
+    prob: 0.01              # 默认 0.01。也可设为范围，例如 [0.005, 0.02]
+    cover: [0.3, 0.7]
+    alpha: [0.3, 0.5]
+    sigma_mask: 100
+    sigma_field: 100
+    coarse_down: 100
+    focus_enable: true
+    focus_center: [0.1, 0.9]
+    focus_radius_ratio: [0.3, 0.7]
+    focus_gain: 5.0
+    morph_kernel: 11
+    morph_iter: 1
+  rotate:
+    range: [0, 360]
+  crop:
+    side: [250, 400] # 25.6A - 51.2A # da=(-48,62.9) db=(93,0)
+    safe_radius: 250
+  flip:
+    h_prob: 0.5
+    v_prob: 0.5
+  edge_mask:
+    prob: 0.0005  # 每个方向独立概率（总体约0.002）
+    bg_min: 0.0   # 遮罩区域背景最小值（0-1范围）
+    bg_max: 0.05  # 遮罩区域背景最大值（0-1范围，模拟背景信号）
+  noise:
+    pixel_size_A_orig: 0.12
+    beam_current_A: 3.0e-11
+    dwell_time_s: [1.0e-6, 3.0e-6]
+    width_orig_px: 1739
+    sigma_jitter_A: [0.0, 0.2]
+    line_freq_hz: 60.0
+    phase_x: 0.0
+    phase_y: 1.5707963267948966
+    gaussian_sigma: [0.0, 0.1]
+  display:
+    gain: [0.8, 1.1]
+    bias: [-0.1, 0.1]
+    gamma: [0.9, 1.2]
+
+
+save_samples:
+  enable: false  # 关闭保存样本，避免I/O瓶颈
+  dir: data/online_training/Crl3
+  format: png
