@@ -13,18 +13,18 @@ pip install -r requirements.txt
 下载权重后，将它们放到以下路径：
 
 ```text
-models/checkpoints/ReS2_online/ema_0.9999_200000.pt
+models/checkpoints/ReS2/ema_0.9999_200000.pt
 models/checkpoints/MoS2/ema_0.9999_200000.pt
 models/checkpoints/MoTe2/ema_0.9999_200000.pt
 models/checkpoints/TaS2/ema_0.9999_200000.pt
-models/checkpoints/WS2_online/ema_0.9999_150000.pt
+models/checkpoints/WS2/ema_0.9999_150000.pt
 models/checkpoints/CrI3/ema_0.9999_200000.pt
 ```
 
 运行 ReS2 示例分解：
 
 ```bash
-python src/main.py --config configs/separate/ReS2_online.yml
+python src/main.py --config configs/separate/ReS2.yml
 ```
 
 输出默认写入：
@@ -36,7 +36,7 @@ outputs/separation/ReS2/
 生成少量模型采样：
 
 ```bash
-python src/core/scripts/image_sample.py --config configs/sample/ReS2_online.yml
+python src/core/scripts/image_sample.py --config configs/sample/ReS2.yml
 ```
 
 STEM 仿真样本生成：
@@ -75,7 +75,7 @@ python src/main.py --config configs/separate/ReS2_MoS2.yml
 
 ```bash
 # 在线训练（边训练边生成数据）
-python src/core/scripts/image_train.py --config configs/train/ReS2_online.yml
+python src/core/scripts/image_train.py --config configs/train/ReS2.yml
 ```
 
 #### 3️⃣ 模型采样
@@ -92,7 +92,7 @@ python src/core/scripts/image_sample.py --config configs/sample/CrI3.yml
 ```bash
 # 指定 GPU 训练
 CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 python \
-  src/core/scripts/image_train.py --config configs/train/ReS2_online.yml
+  src/core/scripts/image_train.py --config configs/train/ReS2.yml
 
 # 在训练 YAML 的 train 段设置 gpu: 0（等效效果）
 ```
@@ -102,7 +102,7 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 python \
 ```bash
 # 指定 GPU
 CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 \
-  python src/core/scripts/image_sample.py --config configs/sample/ReS2_online.yml
+  python src/core/scripts/image_sample.py --config configs/sample/ReS2.yml
 
 # 兼容旧参数法
 python src/core/scripts/image_sample.py \
@@ -127,7 +127,7 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 \
 python src/core/scripts/evaluate_FID.py --help
 
 # 训练日志分析
-python tools/analyze_training_loss.py --log_file models/checkpoints/ReS2_online/progress.csv
+python tools/analyze_training_loss.py --log_file models/checkpoints/ReS2/progress.csv
 
 # 仅数值分析，不生成图表
 python tools/analyze_training_loss.py --no-plot
@@ -227,12 +227,12 @@ moire/
 │   │   ├── guided_diffusion/        # 扩散模型核心
 │   │   ├── functions/               # DDNM 算子封装
 │   │   └── scripts/                 # 训练/采样脚本
-│   └── data_prep/                   # 在线训练增强（online_augmentor.py）
+│   └── data_prep/                   # 仿真训练增强（online_augmentor.py）
 ├── configs/                         # 配置文件
 │   ├── separate/*.yml               # 分解配置
 │   ├── train/*.yml                  # 训练配置
 │   ├── sample/*.yml                 # 采样配置
-│   └── (online augment 配置合并至 train/*.yml)
+│   └── (训练增强配置合并至 train/*.yml)
 ├── data/
 │   ├── multilayer/                  # 待分解图像（data/multilayer/<Material>/）
 │   ├── results/                     # 分解结果
@@ -257,7 +257,7 @@ moire/
   - `rotation_range`：扭角范围与步长（单位：度；若不需要扭角可删除该字段或设为 `null`）
   - `defect_rates_re`：Re 缺失率（0~1，小数；当前仅允许 1 个元素）
   - `mask_path`：裁剪安全 mask（默认 `generate_sample/mask/ReS2.png`）
-  - `augment`：与 `configs/train/ReS2_online.yml:augment` 同构的增强配置（含 `disable`）
+  - `augment`：与 `configs/train/ReS2.yml:augment` 同构的增强配置（含 `disable`）
   - 网格枚举模式：如果不设置最外层 `num`，则按 `step` 进行网格枚举；当某个范围的 `step=0` 时，会在 `start` 与 `stop` 之间做等间距取值（可选用该范围内的 `num` 指定点数，含端点，不写则默认 `num=2`）
 - 运行生成（一个入口即可，是否扭角由配置决定）：
 
@@ -406,12 +406,12 @@ runtime:
 在训练配置中设置：
 ```yaml
 train:
-  resume_checkpoint: models/checkpoints/ReS2_online/ema_0.9999_100000.pt
+  resume_checkpoint: models/checkpoints/ReS2/ema_0.9999_100000.pt
 ```
 
 ### 在线训练数据增强
 ```yaml
-# 在 configs/train/ReS2_online.yml 中
+# 在 configs/train/ReS2.yml 中
 augment:
   disable: []  # 可填入 ["noise", "carbon"] 等禁用某些增强
 
@@ -430,12 +430,12 @@ python tools/analyze_training_loss.py
 
 # 自定义参数
 python tools/analyze_training_loss.py \
-  --log_file models/checkpoints/ReS2_online/progress.csv \
+  --log_file models/checkpoints/ReS2/progress.csv \
   --breakpoint 50000 \
   --output analysis.png
 ```
 
-**分析示例**（ReS2_online 100K→200K 断点续训）：
+**分析示例**（ReS2 100K→200K 断点续训）：
 - VB损失激增 1743%（变分下界学习受冲击）
 - 总损失跳跃 71%，但最终收敛到更低值
 - MSE相对稳定，仅跳跃 27%
@@ -444,7 +444,7 @@ python tools/analyze_training_loss.py \
 
 - `data/multilayer/<Material>/`：待分解的多层图像（推理输入）
 - `data/results/<Material>/<图片名>/`：分解输出
-- `data/仿真数据集/`：在线训练的原始显微图与 mask（匹配 `train.online` 配置）
+- `data/仿真数据集/`：在线训练的原始显微图与 mask（匹配 `train 配置中的数据生成段` 配置）
 - `models/checkpoints/<model>/ema_*.pt`：规范化模型权重
 
 ## 📚 深入了解

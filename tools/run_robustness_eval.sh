@@ -20,7 +20,7 @@ GPU_ID="${GPU_ID:-0}"
 STEP="${STEP:-200}"
 SEED="${SEED:-1234}"
 BATCH_CONFIG="${PROJECT_ROOT}/generate_sample/batch_config.json"
-BASE_CONFIG="${PROJECT_ROOT}/configs/separate/ReS2_online.yml"
+BASE_CONFIG="${PROJECT_ROOT}/configs/separate/ReS2.yml"
 DATA_BASE="${PROJECT_ROOT}/data/experiments"
 
 log_info() { echo "[INFO] $(date '+%H:%M:%S') $*"; }

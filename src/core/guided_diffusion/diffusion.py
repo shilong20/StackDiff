@@ -1,7 +1,7 @@
 """
 【作用概述】封装扩散模型采样、材料分解与滑窗推理逻辑；核心输入来自 YAML 配置中的模型权重、输入图像目录与采样参数，输出为分解/采样结果图像及可选调试记录。
 【关联说明】文件/模块：src/main.py（分解入口）；configs/separate/*.yml（推理配置）；src/core/guided_diffusion/script_util.py（模型构建）；src/core/functions/svd_operators.py（DDNM/SVD 相关算子）。
-【命令行用法】本文件不直接作为脚本运行；请通过 `python src/main.py --config configs/separate/ReS2_online.yml` 间接调用。
+【命令行用法】本文件不直接作为脚本运行；请通过 `python src/main.py --config configs/separate/ReS2.yml` 间接调用。
 """
 
 import os

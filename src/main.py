@@ -2,7 +2,7 @@
 """
 【作用概述】统一的材料分解主程序（基于 YAML 配置）：从输入目录读取 STEM 图像，按配置加载模型并执行分解推理，将输出写入指定目录（通常每张输入图会生成两层结果图等）。
 【关联说明】文件/模块：configs/separate/*.yml（输入/输出路径与推理/处理参数）；src/core/datasets/__init__.py（递归读取输入图像与可选排除目录）；src/core/guided_diffusion/diffusion.py（扩散采样与滑窗逻辑）；src/core/utils/image_preprocessor.py（auto-crop 的裁剪/缩放计划）。
-【命令行用法】python src/main.py --config configs/separate/ReS2_online.yml（参数：--config=YAML 配置路径；--verbose=日志级别）
+【命令行用法】python src/main.py --config configs/separate/ReS2.yml（参数：--config=YAML 配置路径；--verbose=日志级别）
 """
 
 import argparse

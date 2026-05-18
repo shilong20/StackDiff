@@ -16,7 +16,7 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 WEIGHTS = {
     "ReS2": {
-        "path": "models/checkpoints/ReS2_online/ema_0.9999_200000.pt",
+        "path": "models/checkpoints/ReS2/ema_0.9999_200000.pt",
         "url": "",
         "sha256": "",
     },
@@ -36,7 +36,7 @@ WEIGHTS = {
         "sha256": "",
     },
     "WS2": {
-        "path": "models/checkpoints/WS2_online/ema_0.9999_150000.pt",
+        "path": "models/checkpoints/WS2/ema_0.9999_150000.pt",
         "url": "",
         "sha256": "",
     },

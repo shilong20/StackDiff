@@ -34,6 +34,6 @@ processing:
   #   - "bilayer_000999.png"
 
 paths:
-  model_checkpoint: "models/checkpoints/WS2_online/ema_0.9999_150000.pt"
+  model_checkpoint: "models/checkpoints/WS2/ema_0.9999_150000.pt"
   default_input: "data/examples/slip_psnr24/WS2"
   default_output: "outputs/separation/WS2"

@@ -1,7 +1,7 @@
 """
 【作用概述】提供分解/推理阶段的数据集加载入口：递归枚举输入目录中的图像文件并读取为张量，同时支持按需应用预处理计划（auto-crop 的裁剪/缩放）与指定文件白名单；输出为 (tensor, class, rel_path) 供推理管线使用。
 【关联说明】文件/模块：src/main.py（构造 args.path_y / args.image_crop_plans / args.selected_files 等）；src/core/utils/image_preprocessor.py（apply_preprocess_plan）；configs/separate/*.yml（processing.auto_crop / processing.selected_files 等）。
-【命令行用法】本模块不直接作为脚本运行；请通过 `python src/main.py --config configs/separate/ReS2_online.yml` 间接调用。
+【命令行用法】本模块不直接作为脚本运行；请通过 `python src/main.py --config configs/separate/ReS2.yml` 间接调用。
 """
 
 import os

@@ -34,7 +34,7 @@ processing:
 paths:
   # 每层指定对应模型权重（索引与层对应）
   model_checkpoints:
-    - "models/checkpoints/ReS2_online/ema_0.9999_200000.pt"
+    - "models/checkpoints/ReS2/ema_0.9999_200000.pt"
     - "models/checkpoints/MoS2/ema_0.9999_200000.pt"
   default_input: "data/examples/slip_psnr24/ReS2_MoS2"
   default_output: "outputs/separation/ReS2_MoS2"

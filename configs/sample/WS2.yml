@@ -2,9 +2,9 @@
 
 paths:
   # 采样所用权重
-  model_path: models/checkpoints/WS2_online/ema_0.9999_150000.pt
+  model_path: models/checkpoints/WS2/ema_0.9999_150000.pt
   # 输出目录
-  output_dir: data/sample/WS2_online
+  output_dir: data/sample/WS2
 
 runtime:
   gpu: 1

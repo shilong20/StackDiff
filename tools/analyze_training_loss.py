@@ -4,7 +4,7 @@
 【关联说明】文件/模块：src/core/sample/progress.csv 或训练输出目录中的 progress.csv；与 generate_sample 无强耦合。
 【命令行用法】python tools/analyze_training_loss.py --log <path/to/progress.csv> --out loss_analysis.png（参数：--breakpoint=断点 step 可选）。
 
-分析 ReS2_online 训练日志中 loss 的变化趋势
+分析 ReS2 训练日志中 loss 的变化趋势
 
 本脚本分析扩散模型训练过程中的损失函数变化：
 - loss: 主要损失函数 = MSE + VB (如果学习方差)
@@ -83,7 +83,7 @@ def plot_loss_curves(data: Dict[str, np.ndarray], breakpoint: int = None, save_p
     steps = data['step']
     
     fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-    fig.suptitle('ReS2_online Training Loss Analysis', fontsize=16)
+    fig.suptitle('ReS2 Training Loss Analysis', fontsize=16)
 
     # 1. 主要损失曲线
     ax1 = axes[0, 0]
@@ -263,8 +263,8 @@ def detailed_statistics(data: Dict[str, np.ndarray], breakpoint: int = None):
         print()
 
 def main():
-    parser = argparse.ArgumentParser(description='分析ReS2_online训练日志（仅支持 progress.csv）')
-    parser.add_argument('--log_file', '-l', default='models/checkpoints/ReS2_online/progress.csv',
+    parser = argparse.ArgumentParser(description='分析ReS2训练日志（仅支持 progress.csv）')
+    parser.add_argument('--log_file', '-l', default='models/checkpoints/ReS2/progress.csv',
                        help='训练日志 CSV 文件路径（默认指向 progress.csv）')
     parser.add_argument('--breakpoint', '-b', type=int, default=None,
                        help='手动指定断点续训的步数位置（如果不指定，将尝试自动检测）')

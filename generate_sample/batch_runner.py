@@ -261,7 +261,7 @@ def load_config(path: Path) -> BatchConfig:
 
     augment = data.get("augment")
     if not isinstance(augment, dict):
-        raise ValueError("缺少 augment 配置（需与 configs/train/*_online.yml:augment 同构，且支持 disable）。")
+        raise ValueError("缺少 augment 配置（需与 configs/train/*.yml:augment 同构，且支持 disable）。")
 
     shift_basis = str(data.get("shift_basis", "cartesian")).strip().lower()
     if shift_basis in {"xy", "cart", "cartesian"}:

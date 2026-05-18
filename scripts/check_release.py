@@ -35,11 +35,11 @@ FORBIDDEN_DIRS = {
     "pgdgan",
 }
 ALLOWED_CHECKPOINT_PATHS = {
-    "models/checkpoints/ReS2_online/ema_0.9999_200000.pt",
+    "models/checkpoints/ReS2/ema_0.9999_200000.pt",
     "models/checkpoints/MoS2/ema_0.9999_200000.pt",
     "models/checkpoints/MoTe2/ema_0.9999_200000.pt",
     "models/checkpoints/TaS2/ema_0.9999_200000.pt",
-    "models/checkpoints/WS2_online/ema_0.9999_150000.pt",
+    "models/checkpoints/WS2/ema_0.9999_150000.pt",
     "models/checkpoints/CrI3/ema_0.9999_200000.pt",
 }
 

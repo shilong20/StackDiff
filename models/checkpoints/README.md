@@ -4,9 +4,9 @@ Download the released checkpoints into this directory before running sampling
 or separation configs. The public release uses one recommended EMA checkpoint
 per material:
 
-- ReS2: `models/checkpoints/ReS2_online/ema_0.9999_200000.pt`
+- ReS2: `models/checkpoints/ReS2/ema_0.9999_200000.pt`
 - MoS2: `models/checkpoints/MoS2/ema_0.9999_200000.pt`
 - MoTe2: `models/checkpoints/MoTe2/ema_0.9999_200000.pt`
 - TaS2: `models/checkpoints/TaS2/ema_0.9999_200000.pt`
-- WS2: `models/checkpoints/WS2_online/ema_0.9999_150000.pt`
+- WS2: `models/checkpoints/WS2/ema_0.9999_150000.pt`
 - CrI3: `models/checkpoints/CrI3/ema_0.9999_200000.pt`

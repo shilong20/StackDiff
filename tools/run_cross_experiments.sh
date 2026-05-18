@@ -16,7 +16,7 @@ set -e  # 遇到错误立即退出
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # 基础配置文件
-BASE_CONFIG="${PROJECT_ROOT}/configs/separate/ReS2_online.yml"
+BASE_CONFIG="${PROJECT_ROOT}/configs/separate/ReS2.yml"
 
 # 评估配置
 BATCH_CONFIG="${PROJECT_ROOT}/generate_sample/batch_config.json"

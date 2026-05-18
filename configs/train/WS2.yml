@@ -2,8 +2,8 @@
 
 train:
   # 在线训练不依赖预裁剪数据集，但 data_dir 仍需占位（不会被使用）
-  data_dir: data/online_placeholder
-  output_dir: models/checkpoints/WS2_online
+  data_dir: data/placeholder
+  output_dir: models/checkpoints/WS2
   resume_checkpoint: ""
 
   gpu: 0  # 与 nvidia-smi 中的物理卡编号保持一致
@@ -104,5 +104,5 @@ augment:
 
 save_samples:
   enable: false  # 关闭保存样本，避免I/O瓶颈
-  dir: data/online_training/WS2_online
+  dir: data/training/WS2
   format: png
