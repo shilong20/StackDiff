@@ -1,21 +1,7 @@
 """
-【作用概述】
-单张单层图像的“原子 -> 四元环/质心 -> Re 链 -> da/db -> 原点”流程实现（库形式）。
-
-核心输入/输出：
-- 输入：单张单层图路径（128x128），以及原子检测/四元环提取相关超参数；
-        可选直接传入已提取的原子点云 `atoms_points_px`（避免批处理时重复检测）。
-- 输出：dict（可 JSON 序列化）：
-  - `origin_xy_512` / `da_vec_512` / `db_vec_512`（默认 out_scale=4）
-  - 同时包含 128 坐标系下的同名字段（`*_128`）与失败原因 `reason`（若失败）。
-
-【关联说明】文件/模块：
-- tools/pred_dadb/atoms.py（原子检测：detect_atoms_from_image）
-- tools/pred_dadb/cycles.py（四元环提取与模板吸附平移生长）
-- tools/pred_dadb/centroid_chain.py（质心点云 -> Re 链方向 -> da/db 推导）
-- tools/pred_dadb/pipeline_bilayer_root.py（批量双层分类入口：调用本模块）
-
-【命令行用法】本文件不直接运行（由 pipeline_bilayer_root.py 调用）。
+Purpose: Run the single-image ReS2 analysis pipeline from atom detection through Re4-cycle extraction, chain-direction estimation, da/db vectors, and origin selection. It returns a JSON-serializable result dictionary.
+Related files: tools/pred_dadb/atoms.py, tools/pred_dadb/cycles.py, tools/pred_dadb/centroid_chain.py, and tools/pred_dadb/pipeline_bilayer_root.py.
+CLI usage: This module is imported by tools/pred_dadb/pipeline_bilayer_root.py and is not intended to be executed directly.
 """
 
 from __future__ import annotations
@@ -85,11 +71,7 @@ def _jsonify(x: Any) -> Any:
 def _pick_origin_from_center_cycle(
     cyc_pts_ordered: np.ndarray, *, img_wh: Tuple[int, int]
 ) -> Tuple[np.ndarray, Dict[str, Any]]:
-    """
-    在一个有序四元环点序 (p00,p10,p11,p01) 中选原点：
-    - 先算 4 个内角，挑钝角顶点（>90°）；若无，则取最大内角顶点；
-    - 在钝角顶点集合中选离图像中心最近者。
-    """
+    """Internal helper."""
     pts = np.asarray(cyc_pts_ordered, dtype=np.float64).reshape(4, 2)
     neigh = {0: (1, 3), 1: (0, 2), 2: (1, 3), 3: (0, 2)}
     angs = []
@@ -124,12 +106,7 @@ def _align_dadb_to_origin_corner(
     da_vec_px: np.ndarray,
     db_vec_px: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any]]:
-    """
-    用“原点所在四元环的两条相邻边方向”修正 da/db 的符号，保证位于同一侧：
-    - 与 chain_dir 更平行的那条边视为 db 边方向；
-    - 另一条边视为 da 边方向；
-    - 若 da/db 与各自边方向点积为负，则翻转。
-    """
+    """Internal helper."""
     pts = np.asarray(cyc_pts_ordered, dtype=np.float64).reshape(4, 2)
     neigh = {0: (1, 3), 1: (0, 2), 2: (1, 3), 3: (0, 2)}
     j, k = neigh[int(origin_vidx)]
@@ -180,9 +157,7 @@ def _extract_cycles_one_image(
     max_components: int,
     no_intersect: bool,
 ) -> Tuple[List[Tuple[int, int, int, int]], Dict[str, Any]]:
-    """
-    单张图的四元环提取（致密三角形枚举 -> seed -> atom_template 生长），不落盘。
-    """
+    """Internal helper."""
     P = np.asarray(pts, dtype=np.float64).reshape(-1, 2)
     tree = cKDTree(P)
     nn_med = _global_nn_median(tree, P)
@@ -234,12 +209,12 @@ def _extract_cycles_one_image(
     if seed_cyc is None:
         return [], {"ok": False, "reason": "no_seed"}
 
-    # 方向来自 seed 的两条边（单位向量）
+
     vs, _ = _cycle_edges(P, seed_cyc)
     u0 = _unit(vs[0])
     u1 = _unit(vs[1])
 
-    # 理论步长（Å -> px）
+
     sideA_A = _infer_sideA_A_from_highT1_path(img_path)
     if sideA_A is None or float(sideA_A) <= 1e-6:
         use_theory_dadb = False
@@ -250,7 +225,7 @@ def _extract_cycles_one_image(
     comps_dbg: List[Dict[str, Any]] = []
 
     def _choose_steps_atom_template(seed_cycle: Tuple[int, int, int, int], u0t: np.ndarray, u1t: np.ndarray, da_len_px: float, db_len_px: float) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any]]:
-        # 用“生长出的环数量”仲裁 swap
+
         sa1 = np.asarray(_unit(u0t) * float(da_len_px), dtype=np.float64)
         sb1 = np.asarray(_unit(u1t) * float(db_len_px), dtype=np.float64)
         sa2 = np.asarray(_unit(u0t) * float(db_len_px), dtype=np.float64)
@@ -331,11 +306,11 @@ def _extract_cycles_one_image(
         sa0, sb0, swap_dbg = _choose_steps_atom_template(seed_cyc, u0, u1, da_len_px, db_len_px)
         _run_one(seed_cyc, sa0, sb0, {"seed": list(seed_cyc), "seed_score": float(seed_score), "seed_dbg": seed_sd, "swap_dbg": swap_dbg})
     else:
-        # 无理论标尺时，仅返回 seed
+
         picked = [seed_cyc]
         comps_dbg.append({"seed": list(seed_cyc), "seed_score": float(seed_score), "step_method": "seed_only_fallback"})
 
-    # 补全更多 seed（用于处理缺失/多晶域）
+
     for _ in range(int(max(1, max_components)) - 1):
         next_seed = None
         for s, cyc, sd in scores:
@@ -386,16 +361,7 @@ def run_pipeline_one_image_dadb(
     no_intersect: bool = True,
     include_debug: bool = False,
 ) -> Dict[str, Any]:
-    """
-    对单张图像运行当前四步流程并返回结果 dict（已做 JSON 序列化兼容处理）。
-
-    返回字段：
-    - 成功：ok=True，包含 origin/da/db 的 128 与 512 坐标系（按 out_scale 缩放）；
-    - 失败：ok=False，包含 reason。
-
-    说明：
-    - 若传入 atoms_points_px，则跳过 `detect_atoms_from_image`，直接使用给定点云。
-    """
+    """Internal helper."""
     img_path = Path(img_path)
     if not img_path.exists():
         return {"ok": False, "reason": "missing_image", "image": str(img_path.as_posix())}
@@ -544,4 +510,3 @@ def run_pipeline_one_image_dadb(
 
 
 __all__ = ["run_pipeline_one_image_dadb"]
-

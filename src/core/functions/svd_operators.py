@@ -1,3 +1,9 @@
+"""
+Purpose: Define SVD-style measurement operators used by DDNM sampling, including denoising, colorization, inpainting, super-resolution, compressed sensing, and deblurring operators. The operators transform tensors in memory and do not write files.
+Related files: src/core/functions/svd_ddnm.py and src/core/guided_diffusion/diffusion.py.
+CLI usage: This module is imported by the sampler and is not intended to be executed directly.
+"""
+
 import torch
 import cv2
 import numpy as np
@@ -5,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
-    
+
 class A_functions:
     """
     A class replacing the SVD of a matrix A, perhaps efficiently.
@@ -48,7 +54,7 @@ class A_functions:
         Adds trailing zeros to turn a vector from the small dimension (U) to the big dimension (V)
         """
         raise NotImplementedError()
-    
+
     def A(self, vec):
         """
         Multiplies the input vector by A
@@ -56,7 +62,7 @@ class A_functions:
         temp = self.Vt(vec)
         singulars = self.singulars()
         return self.U(singulars * temp[:, :singulars.shape[0]])
-    
+
     def At(self, vec):
         """
         Multiplies the input vector by A transposed
@@ -64,21 +70,21 @@ class A_functions:
         temp = self.Ut(vec)
         singulars = self.singulars()
         return self.V(self.add_zeros(singulars * temp[:, :singulars.shape[0]]))
-    
+
     def A_pinv(self, vec):
         """
         Multiplies the input vector by the pseudo inverse of A
         """
         temp = self.Ut(vec)
         singulars = self.singulars()
-        
+
         factors = 1. / singulars
         factors[singulars == 0] = 0.
-        
+
 #         temp[:, :singulars.shape[0]] = temp[:, :singulars.shape[0]] / singulars
         temp[:, :singulars.shape[0]] = temp[:, :singulars.shape[0]] * factors
         return self.V(self.add_zeros(temp))
-    
+
     def A_pinv_eta(self, vec, eta):
         """
         Multiplies the input vector by the pseudo inverse of A with factor eta
@@ -89,13 +95,13 @@ class A_functions:
 #         print(temp.size(), factors.size(), singulars.size())
         temp[:, :singulars.shape[0]] = temp[:, :singulars.shape[0]] * factors
         return self.V(self.add_zeros(temp))
-    
+
     def Lambda(self, vec, a, sigma_y, sigma_t, eta):
         raise NotImplementedError()
 
     def Lambda_noise(self, vec, a, sigma_y, sigma_t, eta, epsilon):
         raise NotImplementedError()
-        
+
 
 # block-wise CS
 class CS(A_functions):
@@ -167,8 +173,8 @@ def color2gray(x):
 def gray2color(x):
     base = 0.3333 ** 2 + 0.3334 ** 2 + 0.3333 ** 2
     return torch.stack((x * 0.3333 / base, x * 0.3334 / base, x * 0.3333 / base), 1)
-    
-    
+
+
 #a memory inefficient implementation for any general degradation A
 class GeneralA(A_functions):
     def mat_by_vec(self, M, v):
@@ -249,7 +255,7 @@ class WalshHadamardCS(A_functions):
         out = torch.zeros(vec.shape[0], self.channels * self.img_dim**2, device=vec.device)
         out[:, :self.channels * self.img_dim**2 // self.ratio] = vec.clone().reshape(vec.shape[0], -1)
         return out
-    
+
     def Lambda(self, vec, a, sigma_y, sigma_t, eta):
         temp_vec = self.fwht(vec.clone())[:, :, self.perm].permute(0, 2, 1).reshape(vec.shape[0], -1)
 
@@ -272,7 +278,7 @@ class WalshHadamardCS(A_functions):
         temp_out = torch.zeros(vec.shape[0], self.channels, self.img_dim ** 2, device=vec.device)
         temp_out[:, :, self.perm] = temp_vec.clone().reshape(vec.shape[0], -1, self.channels).permute(0, 2, 1)
         return self.fwht(temp_out).reshape(vec.shape[0], -1)
-        
+
     def Lambda_noise(self, vec, a, sigma_y, sigma_t, eta, epsilon):
         temp_vec = vec.clone().reshape(
             vec.shape[0], self.channels, self.img_dim ** 2)[:, :, self.perm].permute(0, 2, 1).reshape(vec.shape[0], -1)
@@ -281,7 +287,7 @@ class WalshHadamardCS(A_functions):
 
         d1_t = torch.ones(self.channels * self.img_dim ** 2, device=vec.device) * sigma_t * eta
         d2_t = torch.ones(self.channels * self.img_dim ** 2, device=vec.device) * sigma_t * (1 - eta ** 2) ** 0.5
-        
+
         singulars = self._singulars
         temp = torch.zeros(self.channels * self.img_dim ** 2, device=vec.device)
         temp[:singulars.size(0)] = singulars
@@ -305,7 +311,7 @@ class WalshHadamardCS(A_functions):
 
         d1_t = d1_t.reshape(1, -1)
         d2_t = d2_t.reshape(1, -1)
-        
+
         temp_vec = temp_vec * d1_t
         temp_eps = temp_eps * d2_t
 
@@ -316,10 +322,10 @@ class WalshHadamardCS(A_functions):
         temp_out_eps = torch.zeros(vec.shape[0], self.channels, self.img_dim ** 2, device=vec.device)
         temp_out_eps[:, :, self.perm] = temp_eps.clone().reshape(vec.shape[0], -1, self.channels).permute(0, 2, 1)
         temp_out_eps = self.fwht(temp_out_eps).reshape(vec.shape[0], -1)
-        
+
         return temp_out_vec + temp_out_eps
-    
-    
+
+
 #Inpainting
 class Inpainting(A_functions):
     def __init__(self, channels, img_dim, missing_indices, device):
@@ -357,7 +363,7 @@ class Inpainting(A_functions):
         reshaped = vec.clone().reshape(vec.shape[0], -1)
         temp[:, :reshaped.shape[1]] = reshaped
         return temp
-    
+
     def Lambda(self, vec, a, sigma_y, sigma_t, eta):
 
         temp = vec.clone().reshape(vec.shape[0], self.channels, -1).permute(0, 2, 1).reshape(vec.shape[0], -1)
@@ -435,7 +441,7 @@ class Inpainting(A_functions):
         result_eps[:, self.kept_indices] = out_eps[:, :self.kept_indices.shape[0]]
         result_eps[:, self.missing_indices] = out_eps[:, self.kept_indices.shape[0]:]
         result_eps = result_eps.reshape(vec.shape[0], -1, self.channels).permute(0, 2, 1).reshape(vec.shape[0], -1)
-        
+
         return result_vec + result_eps
 
 #Denoising
@@ -460,20 +466,20 @@ class Denoising(A_functions):
 
     def add_zeros(self, vec):
         return vec.clone().reshape(vec.shape[0], -1)
-    
+
     def Lambda(self, vec, a, sigma_y, sigma_t, eta):
         if sigma_t < a * sigma_y:
             factor = (sigma_t * (1 - eta ** 2) ** 0.5 / a / sigma_y).item()
             return vec * factor
         else:
             return vec
-    
+
     def Lambda_noise(self, vec, a, sigma_y, sigma_t, eta, epsilon):
         if sigma_t >= a * sigma_y:
             factor = torch.sqrt(sigma_t ** 2 - a ** 2 * sigma_y ** 2).item()
             return vec * factor
         else:
-            return vec * sigma_t * eta 
+            return vec * sigma_t * eta
 
 #Super Resolution
 class SuperResolution(A_functions):
@@ -531,97 +537,97 @@ class SuperResolution(A_functions):
         temp = torch.zeros((vec.shape[0], reshaped.shape[1] * self.ratio**2), device=vec.device)
         temp[:, :reshaped.shape[1]] = reshaped
         return temp
-    
+
     def Lambda(self, vec, a, sigma_y, sigma_t, eta):
         singulars = self.singulars_small
-        
+
         patches = vec.clone().reshape(vec.shape[0], self.channels, self.img_dim, self.img_dim)
         patches = patches.unfold(2, self.ratio, self.ratio).unfold(3, self.ratio, self.ratio)
         patches = patches.contiguous().reshape(vec.shape[0], self.channels, -1, self.ratio ** 2)
-        
+
         patches = torch.matmul(self.Vt_small, patches.reshape(-1, self.ratio**2, 1)).reshape(vec.shape[0], self.channels, -1, self.ratio**2)
-        
+
         lambda_t = torch.ones(self.ratio ** 2, device=vec.device)
-        
+
         temp = torch.zeros(self.ratio ** 2, device=vec.device)
         temp[:singulars.size(0)] = singulars
         singulars = temp
         inverse_singulars = 1. / singulars
         inverse_singulars[singulars == 0] = 0.
-        
+
         if a != 0 and sigma_y != 0:
             change_index = (sigma_t < a * sigma_y * inverse_singulars) * 1.0
             lambda_t = lambda_t * (-change_index + 1.0) + change_index * (singulars * sigma_t * (1 - eta ** 2) ** 0.5 / a / sigma_y)
-            
+
         lambda_t = lambda_t.reshape(1, 1, 1, -1)
 #         print("lambda_t:", lambda_t)
 #         print("V:", self.V_small)
 #         print(lambda_t.size(), self.V_small.size())
 #         print("Sigma_t:", torch.matmul(torch.matmul(self.V_small, torch.diag(lambda_t.reshape(-1))), self.Vt_small))
         patches = patches * lambda_t
-        
-        
+
+
         patches = torch.matmul(self.V_small, patches.reshape(-1, self.ratio**2, 1))
-        
+
         patches = patches.reshape(vec.shape[0], self.channels, self.y_dim, self.y_dim, self.ratio, self.ratio)
         patches = patches.permute(0, 1, 2, 4, 3, 5).contiguous()
         patches = patches.reshape(vec.shape[0], self.channels * self.img_dim ** 2)
-        
+
         return patches
 
     def Lambda_noise(self, vec, a, sigma_y, sigma_t, eta, epsilon):
         singulars = self.singulars_small
-        
+
         patches_vec = vec.clone().reshape(vec.shape[0], self.channels, self.img_dim, self.img_dim)
         patches_vec = patches_vec.unfold(2, self.ratio, self.ratio).unfold(3, self.ratio, self.ratio)
         patches_vec = patches_vec.contiguous().reshape(vec.shape[0], self.channels, -1, self.ratio ** 2)
-        
+
         patches_eps = epsilon.clone().reshape(vec.shape[0], self.channels, self.img_dim, self.img_dim)
         patches_eps = patches_eps.unfold(2, self.ratio, self.ratio).unfold(3, self.ratio, self.ratio)
         patches_eps = patches_eps.contiguous().reshape(vec.shape[0], self.channels, -1, self.ratio ** 2)
-        
+
         d1_t = torch.ones(self.ratio ** 2, device=vec.device) * sigma_t * eta
         d2_t = torch.ones(self.ratio ** 2, device=vec.device) * sigma_t * (1 - eta ** 2) ** 0.5
-        
+
         temp = torch.zeros(self.ratio ** 2, device=vec.device)
         temp[:singulars.size(0)] = singulars
         singulars = temp
         inverse_singulars = 1. / singulars
         inverse_singulars[singulars == 0] = 0.
-        
+
         if a != 0 and sigma_y != 0:
-            
+
             change_index = (sigma_t < a * sigma_y * inverse_singulars) * 1.0
             d1_t = d1_t * (-change_index + 1.0) + change_index  * sigma_t * eta
             d2_t = d2_t * (-change_index + 1.0)
-             
+
             change_index = (sigma_t > a * sigma_y * inverse_singulars) * 1.0
             d1_t = d1_t * (-change_index + 1.0) + torch.sqrt(change_index * (sigma_t ** 2 - a ** 2 * sigma_y ** 2 * inverse_singulars ** 2))
             d2_t = d2_t * (-change_index + 1.0)
-            
+
             change_index = (singulars == 0) * 1.0
             d1_t = d1_t * (-change_index + 1.0) + change_index * sigma_t * eta
             d2_t = d2_t * (-change_index + 1.0) + change_index * sigma_t * (1 - eta ** 2) ** 0.5
-        
+
         d1_t = d1_t.reshape(1, 1, 1, -1)
         d2_t = d2_t.reshape(1, 1, 1, -1)
         patches_vec = patches_vec * d1_t
         patches_eps = patches_eps * d2_t
-        
+
         patches_vec = torch.matmul(self.V_small, patches_vec.reshape(-1, self.ratio**2, 1))
-        
+
         patches_vec = patches_vec.reshape(vec.shape[0], self.channels, self.y_dim, self.y_dim, self.ratio, self.ratio)
         patches_vec = patches_vec.permute(0, 1, 2, 4, 3, 5).contiguous()
         patches_vec = patches_vec.reshape(vec.shape[0], self.channels * self.img_dim ** 2)
-        
+
         patches_eps = torch.matmul(self.V_small, patches_eps.reshape(-1, self.ratio**2, 1))
-        
+
         patches_eps = patches_eps.reshape(vec.shape[0], self.channels, self.y_dim, self.y_dim, self.ratio, self.ratio)
         patches_eps = patches_eps.permute(0, 1, 2, 4, 3, 5).contiguous()
         patches_eps = patches_eps.reshape(vec.shape[0], self.channels * self.img_dim ** 2)
-        
+
         return patches_vec + patches_eps
-    
+
 
 #Colorization
 class Colorization(A_functions):
@@ -665,7 +671,7 @@ class Colorization(A_functions):
         temp = torch.zeros((vec.shape[0], self.channels * self.img_dim**2), device=vec.device)
         temp[:, :self.img_dim**2] = reshaped
         return temp
-    
+
     def Lambda(self, vec, a, sigma_y, sigma_t, eta):
         needles = vec.clone().reshape(vec.shape[0], self.channels, -1).permute(0, 2, 1)
 
@@ -732,7 +738,7 @@ class Colorization(A_functions):
 
         needles_epsilon = torch.matmul(self.V_small, needles_epsilon.reshape(-1, self.channels, 1)).reshape(vec.shape[0], -1,self.channels)
         recon_epsilon = needles_epsilon.permute(0, 2, 1).reshape(vec.shape[0], -1)
-        
+
         return recon_vec + recon_epsilon
 
 #Walsh-Aadamard Compressive Sensing
@@ -777,7 +783,7 @@ class WalshAadamardCS(A_functions):
         out = torch.zeros(vec.shape[0], self.channels * self.img_dim**2, device=vec.device)
         out[:, :self.channels * self.img_dim**2 // self.ratio] = vec.clone().reshape(vec.shape[0], -1)
         return out
-    
+
     def Lambda(self, vec, a, sigma_y, sigma_t, eta):
         temp_vec = self.fwht(vec.clone())[:, :, self.perm].permute(0, 2, 1).reshape(vec.shape[0], -1)
 
@@ -800,7 +806,7 @@ class WalshAadamardCS(A_functions):
         temp_out = torch.zeros(vec.shape[0], self.channels, self.img_dim ** 2, device=vec.device)
         temp_out[:, :, self.perm] = temp_vec.clone().reshape(vec.shape[0], -1, self.channels).permute(0, 2, 1)
         return self.fwht(temp_out).reshape(vec.shape[0], -1)
-        
+
     def Lambda_noise(self, vec, a, sigma_y, sigma_t, eta, epsilon):
         temp_vec = vec.clone().reshape(
             vec.shape[0], self.channels, self.img_dim ** 2)[:, :, self.perm].permute(0, 2, 1).reshape(vec.shape[0], -1)
@@ -809,7 +815,7 @@ class WalshAadamardCS(A_functions):
 
         d1_t = torch.ones(self.channels * self.img_dim ** 2, device=vec.device) * sigma_t * eta
         d2_t = torch.ones(self.channels * self.img_dim ** 2, device=vec.device) * sigma_t * (1 - eta ** 2) ** 0.5
-        
+
         singulars = self._singulars
         temp = torch.zeros(self.channels * self.img_dim ** 2, device=vec.device)
         temp[:singulars.size(0)] = singulars
@@ -833,7 +839,7 @@ class WalshAadamardCS(A_functions):
 
         d1_t = d1_t.reshape(1, -1)
         d2_t = d2_t.reshape(1, -1)
-        
+
         temp_vec = temp_vec * d1_t
         temp_eps = temp_eps * d2_t
 
@@ -844,7 +850,7 @@ class WalshAadamardCS(A_functions):
         temp_out_eps = torch.zeros(vec.shape[0], self.channels, self.img_dim ** 2, device=vec.device)
         temp_out_eps[:, :, self.perm] = temp_eps.clone().reshape(vec.shape[0], -1, self.channels).permute(0, 2, 1)
         temp_out_eps = self.fwht(temp_out_eps).reshape(vec.shape[0], -1)
-        
+
         return temp_out_vec + temp_out_eps
 
 #Convolution-based super-resolution
@@ -880,7 +886,7 @@ class SRConv(A_functions):
         #calculate the singular values of the big matrix
         self._singulars = torch.matmul(self.singulars_small.reshape(small_dim, 1), self.singulars_small.reshape(1, small_dim)).reshape(small_dim**2)
         #permutation for matching the singular values. See P_1 in Appendix D.5.
-        self._perm = torch.Tensor([self.img_dim * i + j for i in range(self.small_dim) for j in range(self.small_dim)] + \
+        self._perm = torch.Tensor([self.img_dim * i + j for i in range(self.small_dim) for j in range(self.small_dim)] +\
                                   [self.img_dim * i + j for i in range(self.small_dim) for j in range(self.small_dim, self.img_dim)]).to(device).long()
 
     def V(self, vec):
@@ -1003,18 +1009,18 @@ class Deblurring(A_functions):
 
     def add_zeros(self, vec):
         return vec.clone().reshape(vec.shape[0], -1)
-    
+
     def A_pinv(self, vec):
         temp = self.Ut(vec)
         # singulars = self._singulars.repeat(1, 3).reshape(-1)
         singulars = self._singulars.repeat(1, 1).reshape(-1)
-        
+
         factors = 1. / singulars
         factors[singulars == 0] = 0.
-        
+
         temp[:, :singulars.shape[0]] = temp[:, :singulars.shape[0]] * factors
         return self.V(self.add_zeros(temp))
-    
+
     def Lambda(self, vec, a, sigma_y, sigma_t, eta):
         temp_vec = self.mat_by_img(self.V_small.transpose(0, 1), vec.clone())
         temp_vec = self.img_by_mat(temp_vec, self.V_small).reshape(vec.shape[0], self.channels, -1)

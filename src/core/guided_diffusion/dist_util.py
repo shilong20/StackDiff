@@ -17,11 +17,11 @@ _MPI_ENV_KEYS = [
     "MPI_LOCALNRANKS",
 ]
 
-if any(os.environ.get(k) for k in _MPI_ENV_KEYS):  # 仅在 MPI 环境下尝试导入
+if any(os.environ.get(k) for k in _MPI_ENV_KEYS):
     try:
         from mpi4py import MPI  # type: ignore
         _MPI_AVAILABLE = True
-    except Exception:  # pragma: no cover - 环境缺失 MPI 时兜底
+    except Exception:
         MPI = None  # type: ignore
         _MPI_AVAILABLE = False
 import torch as th
@@ -50,7 +50,7 @@ def setup_dist():
         _setup_single_process(backend)
         return
 
-    # 若用户已通过外部设置 CUDA_VISIBLE_DEVICES，则不要覆盖；否则按 rank 取模设置单卡可见
+
     if "CUDA_VISIBLE_DEVICES" not in os.environ or os.environ["CUDA_VISIBLE_DEVICES"].strip() == "":
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{rank % GPUS_PER_NODE}"
 
@@ -92,7 +92,7 @@ def load_state_dict(path, **kwargs):
         with bf.BlobFile(path, "rb") as f:
             return th.load(f, **kwargs)
 
-    chunk_size = 2 ** 30  # MPI 有较小的单次消息上限
+    chunk_size = 2 ** 30
     rank = comm.Get_rank()
     if rank == 0:
         with bf.BlobFile(path, "rb") as f:
@@ -132,7 +132,7 @@ def _find_free_port():
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return s.getsockname()[1]
     except OSError:
-        # 在受限环境下无法创建 socket 时，退回默认端口
+
         return 29500
     finally:
         if s is not None:
@@ -145,12 +145,12 @@ def _find_free_port():
 def _get_mpi_comm():
     if not _MPI_AVAILABLE:
         return None
-    # 若当前进程没有 MPI 相关环境变量，则视为单进程场景，避免调用 MPI_Init()
+
     if not any(os.environ.get(k) for k in _MPI_ENV_KEYS):
         return None
     try:
         comm = MPI.COMM_WORLD
-        # 访问 rank/size 以触发潜在错误
+
         _ = comm.Get_rank()
         _ = comm.Get_size()
         return comm
@@ -163,10 +163,10 @@ def _setup_single_process(backend: str) -> None:
     os.environ.setdefault("RANK", "0")
     os.environ.setdefault("WORLD_SIZE", "1")
     os.environ.setdefault("GLOO_SOCKET_IFNAME", "lo")
-    
+
     # For single GPU, directly install fake distributed to avoid init issues
     _install_fake_distributed()
-    
+
     # Set CUDA device if available
     if backend == "nccl" and th.cuda.is_available():
         try:
@@ -176,7 +176,7 @@ def _setup_single_process(backend: str) -> None:
 
 
 def _install_fake_distributed() -> None:
-    """在无法初始化 torch.distributed 时，安装单进程替代实现。"""
+    """Internal helper."""
 
     def _noop(*args, **kwargs):
         return None

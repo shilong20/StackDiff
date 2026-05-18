@@ -1,429 +1,129 @@
-# StackDiff: 多层材料分解与分析
+# StackDiff
 
-> 基于扩散模型和物理约束的二维材料层分解系统。论文实验覆盖 ReS2、MoS2、MoTe2、TaS2 四种材料。
+StackDiff is a diffusion-based toolkit for ReS2 multilayer STEM image separation and interlayer analysis. This release is intentionally compact: it keeps the ReS2 inference pipeline, a small ReS2 example set, ReS2 lattice/interlayer analysis utilities, and an optional ReS2 synthetic STEM generator.
 
-本仓库是论文开源版代码工作区：只包含核心代码、公开配置、少量示例数据和结构文件。完整训练数据、完整实验结果和模型权重不放入 Git；每种材料只发布一个推荐 EMA 权重。
+Training scripts, large datasets, full experiment logs, non-ReS2 benchmark configs, and model checkpoint files are not included in the public repository.
 
-## 快速开始
+## Contents
+
+- `src/main.py`: ReS2 multilayer separation entry point.
+- `configs/separate/ReS2.yml`: default ReS2 separation configuration.
+- `data/examples/ReS2/`: small demo multilayer inputs.
+- `tools/pred_dadb/`: ReS2 atom detection, lattice-vector estimation, and bilayer classification.
+- `tools/analyze_interlayer_res2.py`: slip and twist analysis built on `tools/pred_dadb`.
+- `tools/synthetic_res2/`: optional ReS2 synthetic bilayer STEM generator.
+
+## Installation
 
 ```bash
 pip install -r requirements.txt
 ```
 
-下载权重后，将它们放到以下路径：
+The separation pipeline expects a ReS2 checkpoint at:
 
 ```text
 models/checkpoints/ReS2/ema_0.9999_200000.pt
-models/checkpoints/MoS2/ema_0.9999_200000.pt
-models/checkpoints/MoTe2/ema_0.9999_200000.pt
-models/checkpoints/TaS2/ema_0.9999_200000.pt
 ```
 
-运行 ReS2 示例分解：
+Checkpoint files are not tracked by Git. After the public checkpoint is uploaded, fill the URL in `scripts/download_weights.py` or place the file manually at the path above.
+
+## ReS2 Layer Separation
+
+Run the bundled ReS2 example:
 
 ```bash
 python src/main.py --config configs/separate/ReS2.yml
 ```
 
-输出默认写入：
+By default, inputs are read from:
+
+```text
+data/examples/ReS2/
+```
+
+and outputs are written to:
 
 ```text
 outputs/separation/ReS2/
 ```
 
-生成少量模型采样：
+For your own images, either place them under `data/examples/ReS2/` or edit `paths.default_input` and `paths.default_output` in `configs/separate/ReS2.yml`.
+
+Expected outputs for each input image include:
+
+- `_original.png`: the processed input image.
+- `_0.png`: separated layer 0.
+- `_1.png`: separated layer 1.
+- `_combine.png`: the reconstructed superposition.
+
+If your input filename ends with a physical field-of-view suffix such as `sample-7.1x3.1.png`, the auto-crop logic can infer a grid and crop/resize plan from that size. Otherwise, the pipeline falls back to the configured default grid settings.
+
+## ReS2 da/db and Interlayer Analysis
+
+If you already have per-layer images organized as one folder per bilayer sample, with files named `*_0.png` and `*_1.png`, run:
 
 ```bash
-python src/core/scripts/image_sample.py --config configs/sample/ReS2.yml
+python tools/pred_dadb/pipeline_bilayer_root.py \
+  --root path/to/bilayer_folders \
+  --out_csv outputs/res2_pred_dadb.csv
 ```
 
-四种论文材料均提供采样配置：`ReS2.yml`、`MoS2.yml`、`MoTe2.yml`、`TaS2.yml`。
+This detects Re atom positions, estimates the ReS2 lattice vectors `(da, db)` for each layer, and classifies each sample as `slip`, `twist`, `flip_slip`, `flip_twist`, or `unknown`.
 
-STEM 仿真样本生成：
+To compute physical interlayer quantities from the same folder tree:
 
 ```bash
-python generate_sample/Batch_generate.py --config generate_sample/ReS2.json
+python tools/analyze_interlayer_res2.py \
+  --root path/to/bilayer_folders \
+  --out_csv outputs/res2_interlayer.csv \
+  --pred_csv outputs/res2_pred_dadb.csv \
+  --pred_atoms_dir outputs/res2_pred_dadb_atoms
 ```
 
-`generate_sample` 需要外部 `incostem` 可执行文件；本仓库不分发该二进制和第三方源码，官方 computem/temsim 项目页为 https://sourceforge.net/projects/computem/files/。
+For slip-like samples, the analyzer reports pixel and physical shifts and their projection in the `(da, db)` basis. For twist-like samples, it reports a refined twist angle.
 
-## ✨ 项目特性
+## Optional Synthetic ReS2 Generator
 
-- 🔧 **YAML 驱动**：所有参数集中在配置文件，最小化命令行
-- 🧪 **论文材料**：`ReS2`、`MoS2`、`MoTe2`、`TaS2`
-- ⚡ **仿真生成训练样本**：CPU 数据生成 + GPU 训练，高效利用资源
-- 🎯 **物理约束**：DDNM 算子确保输出物理合理性
-- 🔄 **Time-Travel Back**：RePaint 风格增强，提升约束条件下稳定性
+The optional generator lives under `tools/synthetic_res2/`.
 
-### 核心使用流程
-
-#### 1️⃣ 分解多层图像（最常用）
-
-```bash
-# 准备输入：复制图片到 data/multilayer/ReS2/
-# 运行分解
-python src/main.py --config configs/separate/ReS2.yml
-
-# 查看结果：data/results/ReS2/<图片名>/
-#   ├── _original.png  # 输入原图
-#   ├── _0.png         # 第0层
-#   ├── _1.png         # 第1层
-#   └── _combine.png   # 合并结果
-```
-
-#### 2️⃣ 训练模型
-
-```bash
-# 在线训练（边训练边生成数据）
-python src/core/scripts/image_train.py --config configs/train/ReS2.yml
-```
-
-#### 3️⃣ 模型采样
-
-```bash
-# 生成样本到 ./sample/ 目录
-python src/core/scripts/image_sample.py --config configs/sample/TaS2.yml
-```
-
-## 📚 完整命令参考
-
-### 训练进阶
-
-```bash
-# 指定 GPU 训练
-CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 python \
-  src/core/scripts/image_train.py --config configs/train/ReS2.yml
-
-# 在训练 YAML 的 train 段设置 gpu: 0（等效效果）
-```
-
-### 采样进阶
-
-```bash
-# 指定 GPU
-CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 \
-  python src/core/scripts/image_sample.py --config configs/sample/ReS2.yml
-
-# 兼容旧参数法
-python src/core/scripts/image_sample.py \
-  --model_path models/checkpoints/xxx.pt \
-  --num_samples 10 --image_size 128 --batch_size 4
-```
-
-### 分解进阶
-
-```bash
-# 指定 GPU
-CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 \
-  python src/main.py --config configs/separate/ReS2_test.yml
-
-# 仅处理指定文件（在配置的 processing.selected_files 中列出）
-```
-
-### 模型评估
-
-```bash
-# FID 评估
-python src/core/scripts/evaluate_FID.py --help
-
-# 训练日志分析
-python tools/analyze_training_loss.py --log_file models/checkpoints/ReS2/progress.csv
-
-# 仅数值分析，不生成图表
-python tools/analyze_training_loss.py --no-plot
-```
-
-### 图像处理工具
-
-```bash
-# 调整图像尺寸（保持长宽比）
-python tools/resize_short_edge.py \
-  --input_dir data/multilayer/ReS2 \
-  --output_dir data/multilayer/ReS2 \
-  --size 512
-```
-
-## 📖 核心概念
-
-### Time-Travel Back
-采样过程中的周期性回溯机制，显著提升约束条件下（如分解）的稳定性：
-
-```yaml
-sampling:
-  time_travel:
-    enable: true          # 开启/关闭
-    travel_length: 10     # 回跳步长（建议 6-20）
-    travel_repeat: 2      # 重复次数（>1 才生效）
-```
-
-**工作机制**：在总步数 `T_sampling` 内，以 `travel_length` 为间隔插入回跳并重新加噪（RePaint 风格），随后再继续前向采样。适用于分解、修复等带退化算子的任务。
-
-### 自动裁剪
-根据文件名中的物理尺寸（如 `image-7.1x3.1.png`，单位是nm，表示宽为7.1nm，高为3.1nm）自动计算最优裁剪区域，确保不同分辨率图像的处理一致性。
-
-```yaml
-processing:
-  auto_crop:
-    enabled: true
-    unit_size_range: [2.4, 4.8]  # 单位尺寸范围（nm）
-```
-
-### 滑窗推理
-通过重叠窗口处理高分辨率图像，在保证细节的同时避免显存溢出。
-
-```yaml
-processing:
-  sliding_window: true  # 设为 false 使用整块推理（更快但可能有边缘效应）
-```
-
-### 自适应叠加算子（Adaptive Superposition）
-- 适用于 `separate_sum` 任务，确保滑窗/整图在每一步迭代都满足 `max(k * ΣL_i) = max(y)` 的物理约束
-- 在 YAML 的 `separation` 段开启：
-
-```yaml
-separation:
-  method: separate_sum
-  adaptive_superposition: true   # 默认 false，保持向后兼容
-  # 若需要更稳定的求解，可改为手动指定常数 k（覆盖自适应）
-  # 取值自动截断到 [0,1]，推荐与 adaptive_superposition 二选一
-  fixed_superposition_k: 0.85    # 不填则使用自适应/默认 1.0
-```
-
-- 开启自适应时每次迭代都会重新计算 `k`；设置 `fixed_superposition_k` 时则全程复用同一常数。`*_conbine.png` 也使用相同算子，保证与输入观测一致的亮度/对比度。
-- 固定 k 示例（以 `configs/separate/MoS2.yml` 为例），建议显式关闭自适应以避免混淆：
-
-```yaml
-separation:
-  num_layers: 2
-  method: separate_sum
-  eta: 0.85
-  sigma_y: 0.
-  simplified: true
-  adaptive_superposition: false   # 固定 k 时可关掉自适应
-  fixed_superposition_k: 0.85     # 全局常数 k，优先级高于自适应
-  residual_debug: false
-```
-
-若同时设置 `adaptive_superposition: true` 与 `fixed_superposition_k`，代码会优先采用固定模式（在残差调试 CSV 的 `k_mode` 字段可看到值为 `fixed`）。
-
-### 残差调试模式（Residual Debug）
-- 打开后记录每一步 `|residual_pos|` 的均值与自适应系数 `k`，用于排查收敛状态
-- 支持 CSV + 折线图（PNG），输出路径与分解结果同目录，例如 `data/results/<mat>/<img>/<img>_residual_debug.*`
-
-```yaml
-separation:
-  residual_debug: true  # 默认 false
-```
-
-CSV 字段：`iter, shift_h, shift_w, shift_index, t, t_next, lambda_t, k, k_mode, residual_abs_mean, adaptive`；自动生成的 `*_residual_debug.png` 横轴为迭代次数，纵轴同时绘制 `k`（蓝色）与 `|residual_pos|`（橙色）。
-
-## 📁 项目结构
-
-```
-moire/
-├── src/
-│   ├── main.py                      # 分解主入口
-│   ├── core/
-│   │   ├── guided_diffusion/        # 扩散模型核心
-│   │   ├── functions/               # DDNM 算子封装
-│   │   └── scripts/                 # 训练/采样脚本
-│   └── data_prep/                   # 仿真训练增强（online_augmentor.py）
-├── configs/                         # 配置文件
-│   ├── separate/*.yml               # 分解配置
-│   ├── train/*.yml                  # 训练配置
-│   ├── sample/*.yml                 # 采样配置
-│   └── (训练增强配置合并至 train/*.yml)
-├── data/
-│   ├── multilayer/                  # 待分解图像（data/multilayer/<Material>/）
-│   ├── results/                     # 分解结果
-│   └── 仿真数据集/                   # 在线训练图像/掩膜
-└── tools/                           # 实用工具
-```
-
-## 🧫 generate_sample：STEM 批量仿真（直接输出 PNG）
-
-`generate_sample/` 用于生成四种材料（`ReS2`、`MoS2`、`MoTe2`、`TaS2`）的双层 STEM 仿真 PNG。目录中只保留核心生成入口、材料 JSON、结构文件和 mask；更详细的本地运行说明见 `generate_sample/README.md`。
-
-`incostem/computem` 是外部依赖，不随本仓库分发。请从官方 computem/temsim 项目下载或编译：
+It depends on the external `incostem` executable from the official computem/temsim project:
 
 https://sourceforge.net/projects/computem/files/
 
-然后将可执行文件放到 `generate_sample/incostem`，或在材料 JSON 的 `incostem_path` 中填写实际路径。
+`incostem` is not distributed with StackDiff. Place a local executable at:
+
+```text
+tools/synthetic_res2/incostem
+```
+
+or edit `tools/synthetic_res2/config.json` and set `incostem_path` to an absolute path.
+
+Generate synthetic ReS2 bilayer PNGs:
 
 ```bash
-python generate_sample/Batch_generate.py --config generate_sample/ReS2.json
-python generate_sample/Batch_generate.py --config generate_sample/MoS2.json
-python generate_sample/Batch_generate.py --config generate_sample/MoTe2.json
-python generate_sample/Batch_generate.py --config generate_sample/TaS2.json
+python tools/synthetic_res2/generate.py --config tools/synthetic_res2/config.json
 ```
 
-默认只输出 PNG。如需同步保存 GT 原子坐标，可开启：
+To also export ground-truth label files:
 
 ```bash
-MOIRE_SAVE_LABELS=1 python generate_sample/Batch_generate.py --config generate_sample/ReS2.json
+MOIRE_SAVE_LABELS=1 python tools/synthetic_res2/generate.py --config tools/synthetic_res2/config.json
 ```
 
-### 一键：分解 + eval（自动多 seed 重试）
-传统流程是：先生成双层 PNG → 手动运行 `python src/main.py ...` 分解 → 再运行 eval 脚本。
-现在可以直接用 eval 脚本完成“分解 + 原本 eval”，并在误差偏大时自动重试 4 次不同 seed，最终只保留误差最小的分解结果与 CSV 记录。
+## Repository Hygiene
 
-**滑移（shift_pbc）示例**（双层 PNG 在 `data/examples/MoS2/`，分解输出到 `outputs/separation/MoS2/` 后再评估）：
-```bash
-python tools/evaluate_generate_sample_wraparound_pbc.py \
-  --task shift_pbc \
-  --results_root outputs/separation/MoS2 \
-  --batch_config generate_sample/MoS2.json \
-  --separate_yml configs/separate/MoS2.yml \
-  --separate_seed 42
-```
-
-**扭角（twist）示例**：
-```bash
-python tools/evaluate_generate_sample_wraparound_pbc.py \
-  --task twist \
-  --results_root outputs/separation/TaS2 \
-  --batch_config generate_sample/TaS2.json \
-  --separate_yml configs/separate/TaS2.yml \
-  --separate_seed 42
-```
-
-**扭角（twist_labels，理想 GT 点云输入）示例**（直接使用 `MOIRE_SAVE_LABELS` 导出的 `.npz`）：
-```bash
-python tools/evaluate_generate_sample_wraparound_pbc.py \
-  --task twist_labels \
-  --results_root outputs/separation/TaS2_labels \
-  --batch_config generate_sample/TaS2.json
-```
-
-说明：
-- `--separate_yml` 会在进程启动时快照到内存（避免你并发实验中修改 yml 影响本次运行），并强制使用 `results_root.parent` 作为输入目录、`results_root` 作为输出目录。
-- bad 阈值默认：`shift_pbc` 为 `--retry_thr_A=0.1`（Å），`twist` 为 `--retry_thr_deg=0.5`（度）；可按需调整。
-- `twist` 的 `twist_period_deg`（用于按旋转对称性折叠角度）默认优先从 `--batch_config` 的 `twist_period_deg` 读取；也可用 `--twist_period_deg` 强制覆写。该值按材料/相而定：例如你当前约定为 MoS2=60、TaS2=120、MoTe2=180。
-- 自动重试产生的中间结果、以及被替换掉的旧结果会移动到 `trash/eval_autopipeline_<task>_*/`，避免直接删除导致丢失。
-
-## 🔬 ReS2 晶格基矢提取与层间物理量解析（pred_dadb + interlayer_analyzer_res2）
-
-本项目在 `tools/pred_dadb/` 与 `src/tools/analysis/interlayer_analyzer_res2.py` 中实现了两项与 ReS2/HighT1 数据强相关的功能：
-
-### 1) 单层晶格向量 (da, db) 提取 + 双层类别分类（slip/twist/flip_*）
-
-入口脚本：`tools/pred_dadb/pipeline_bilayer_root.py`
-
-功能：
-- 对一个“包含多个双层分解子文件夹”的 root（例如 `data/HighT1/`）批处理。
-- 每个子文件夹内读取两张单层图 `*_0.png` 与 `*_1.png`：
-  - 提取 Re 原子点云（默认会落盘 atoms.json 以便复用/人工排查）
-  - 在单层上估计原点 `origin` 与晶格基矢 `(da, db)`
-  - 对双层样本输出粗类别：`slip / twist / flip_slip / flip_twist / unknown`
-
-坐标系约定：
-- 输入图片为 128×128；
-- 输出的 `origin/da/db` 与落盘的 atoms.json **统一使用 512 坐标系**（默认 `out_scale=4`，即把 128 坐标系的 (x,y) 乘以 4）。
-
-用法示例：
-```bash
-python tools/pred_dadb/pipeline_bilayer_root.py \
-  --root data/HighT1 \
-  --out_csv tools/pred_dadb/highT1_pred_dadb.csv
-```
-
-输出：
-- `--out_csv`：每个双层样本一行，包含 `class`、两层的 `origin/da/db`（512 坐标系）、以及 `slip/flip_slip` 时的 `da_mean_512/db_mean_512` 等字段。
-- `<out_csv_stem>_atoms/`：默认生成原子点云 json 与 `atoms_index.json`（点坐标为 512 坐标系）。
-
-### 2) 基于 pred_dadb 输出的层间物理量解析（slip 平移 + twist 精细扭角）
-
-入口脚本：`src/tools/analysis/interlayer_analyzer_res2.py`
-
-功能（在 pred_dadb 粗分类基础上做“物理量”计算）：
-- `slip`：在 512 坐标系下做粗到细平移搜索，得到 `shift_px`（layer0→layer1），并投影到 `(da,db)` 基底得到 `(c_a,c_b)`；同时输出 ReS2 规约后的 `(c_a,c_b)`。
-- `twist`：用“位移向量集合匹配”的旋转搜索输出 `twist_fine_deg`（范围 [0,180)）与 `twist_score`。
-- `flip_twist`：不做下游量计算。
-- `flip_slip`：先把 layer0 的点云沿翻转轴反射（轴过 `origin0` 且垂直于 `db_mean`），转为等价的 non-flip slip 后再按 slip 流程计算。
-
-它会优先复用 pred_dadb 的输出（若已存在则默认跳过 pipeline；可用 `--force_pred` 强制重跑）：
-```bash
-python src/tools/analysis/interlayer_analyzer_res2.py \
-  --root data/HighT1 \
-  --out_csv tools/pred_dadb/highT1_interlayer.csv \
-  --pred_csv tools/pred_dadb/highT1_pred_dadb.csv \
-  --pred_atoms_dir tools/pred_dadb/highT1_pred_dadb_atoms
-```
-
-输出：
-- `--out_csv`：每个双层样本一行，包含 `class`、`shift_px/shift_A`、`ab_mean_reduced_*`（slip/flip_slip），以及 `twist_fine_deg`（twist）等字段。
-  字段含义可直接参考脚本开头 docstring，或在 CSV 的列名上查看（示例文件：`tools/pred_dadb/highT1_interlayer_*.csv`）。
-
-## 🔧 常用配置
-
-### GPU 选择
-**推荐方式**（避免脚本看到的GPU索引与nvidia-smi不一致）：
-```bash
-CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 python ...
-```
-
-**替代方式**（YAML 配置）：
-```yaml
-# 训练配置
-train:
-  gpu: 0  # 与 nvidia-smi 序号一致，-1 表示自动
-
-# 采样/分解配置
-runtime:
-  gpu: 0
-```
-
-### 断点续训
-在训练配置中设置：
-```yaml
-train:
-  resume_checkpoint: models/checkpoints/ReS2/ema_0.9999_100000.pt
-```
-
-### 在线训练数据增强
-```yaml
-# 在 configs/train/ReS2.yml 中
-augment:
-  disable: []  # 可填入 ["noise", "carbon"] 等禁用某些增强
-
-# 关闭保存样本避免 I/O 瓶颈
-save_samples:
-  enable: false
-```
-
-## 📊 训练日志分析
-
-项目提供了训练日志分析工具：
+Before publishing or tagging a release, run:
 
 ```bash
-# 基本分析（生成图表和统计报告）
-python tools/analyze_training_loss.py
-
-# 自定义参数
-python tools/analyze_training_loss.py \
-  --log_file models/checkpoints/ReS2/progress.csv \
-  --breakpoint 50000 \
-  --output analysis.png
+python scripts/check_release.py
 ```
 
-**分析示例**（ReS2 100K→200K 断点续训）：
-- VB损失激增 1743%（变分下界学习受冲击）
-- 总损失跳跃 71%，但最终收敛到更低值
-- MSE相对稳定，仅跳跃 27%
+The check guards against accidentally committing model weights, large archives, local paths, cache folders, and other non-release artifacts.
 
-## 🗂️ 数据目录约定
+## License
 
-- `data/multilayer/<Material>/`：待分解的多层图像（推理输入）
-- `data/results/<Material>/<图片名>/`：分解输出
-- `data/仿真数据集/`：在线训练的原始显微图与 mask（匹配 `train 配置中的数据生成段` 配置）
-- `models/checkpoints/<model>/ema_*.pt`：规范化模型权重
+This project is released under the MIT License. See `LICENSE` for details.
 
-## 📄 许可证
+## Acknowledgements
 
-本项目采用 MIT 许可证。
-
-## 🙏 致谢
-
-- [guided-diffusion](https://github.com/openai/guided-diffusion) - 扩散模型基础实现
-- DDNM 论文 - 约束条件下的生成建模方法
-- 材料科学社区 - 领域专业知识支持
+StackDiff builds on ideas and code patterns from diffusion inverse-problem methods and OpenAI guided-diffusion. External simulator tools such as computem/temsim are separate projects and are not vendored in this repository.

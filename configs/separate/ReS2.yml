@@ -1,6 +1,6 @@
-# ReS2 材料分解配置（统一格式）
+# ReS2 layer separation configuration.
 material: ReS2
-description: "仿真硫化铼(ReS2)材料分解"
+description: "ReS2 multilayer STEM image separation"
 
 runtime:
   gpu: 0
@@ -19,16 +19,16 @@ separation:
   eta: 0.85
   sigma_y: 0.
   simplified: true
-  adaptive_superposition: true  # 自适应叠加
-  residual_debug: false  # 残差调试日志
+  adaptive_superposition: true
+  residual_debug: false
 
 processing:
   auto_crop:
     enabled: true
     unit_size_range: [2.4, 4.8]
-  sliding_window: true   # 设为 false 可禁用滑窗（加快推理，但可能出现边缘效应）
+  sliding_window: true
 
-  # 指定处理的文件列表（可选）
+  # Optional whitelist of input files.
   # selected_files:
   #   - "four_layers.png"
 

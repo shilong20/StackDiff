@@ -1,3 +1,9 @@
+"""
+Purpose: Dataset and DataLoader helpers adapted from guided diffusion for image-based training and sampling utilities. StackDiff's public inference path primarily uses src/core/datasets, while these helpers remain for model compatibility.
+Related files: src/core/guided_diffusion/diffusion.py and src/core/guided_diffusion/train_util.py.
+CLI usage: This module is imported by guided-diffusion utilities and is not intended to be executed directly.
+"""
+
 import math
 import os
 import random
@@ -139,17 +145,17 @@ class ImageDataset(Dataset):
             arr = random_crop_arr(pil_image, self.resolution)
         else:
             arr = center_crop_arr(pil_image, self.resolution)
-        
-        # 把arr变成三维的
+
+
         arr = np.expand_dims(arr, axis=2)
 
         if self.random_flip:
             rand = random.random()
             if rand < 0.25:
-                # 25% 的概率水平翻转
+
                 arr = arr[:, ::-1]
             elif rand < 0.5:
-                # 25% 的概率垂直翻转
+
                 arr = arr[::-1, :]
 
         arr = arr.astype(np.float32) / 127.5 - 1

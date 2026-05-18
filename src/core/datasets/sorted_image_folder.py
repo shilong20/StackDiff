@@ -1,4 +1,8 @@
-# sorted_image_folder.py
+"""
+Purpose: Provide an ImageFolder subclass with optional numeric filename sorting for deterministic StackDiff inference order. The module returns the standard torchvision samples without writing files.
+Related files: src/core/guided_diffusion/diffusion.py and src/core/datasets/__init__.py.
+CLI usage: This module is imported by the inference pipeline and is not intended to be executed directly.
+"""
 
 from torchvision.datasets import ImageFolder
 from torchvision.datasets.folder import default_loader
@@ -11,7 +15,7 @@ class SortedImageFolder(ImageFolder):
         super(SortedImageFolder, self).__init__(root, transform, target_transform,
                                                 loader, is_valid_file)
         if sort:
-            # 重写imgs和samples，使得它们按照文件名的数值顺序排序,注意，此时图片的命名必须是数字
+
             self.imgs = sorted(self.imgs, key=lambda x: int(os.path.splitext(os.path.basename(x[0]))[0]))
             self.samples = self.imgs
         else:

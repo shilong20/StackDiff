@@ -1,3 +1,9 @@
+"""
+Purpose: Define the legacy guided-diffusion model components used by StackDiff checkpoints. The module contains neural-network layers and model utilities; it operates on tensors and does not write files.
+Related files: src/core/guided_diffusion/script_util.py, src/core/guided_diffusion/unet.py, and src/core/guided_diffusion/diffusion.py.
+CLI usage: This module is imported by model construction utilities and is not intended to be executed directly.
+"""
+
 import math
 import torch
 import torch.nn as nn
@@ -201,10 +207,10 @@ class Model(nn.Module):
         resolution = config.data.image_size
         resamp_with_conv = config.model.resamp_with_conv
         num_timesteps = config.diffusion.num_diffusion_timesteps
-        
+
         if config.model.type == 'bayesian':
             self.logvar = nn.Parameter(torch.zeros(num_timesteps))
-        
+
         self.ch = ch
         self.temb_ch = self.ch*4
         self.num_resolutions = len(ch_mult)

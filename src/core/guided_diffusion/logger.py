@@ -61,7 +61,7 @@ class HumanOutputFormat(KVWriter, SeqWriter):
                         valstr = f"{val:.6e}"
                     else:
                         valstr = f"{val:.6f}"
-                    # 去掉多余的尾随零，提升可读性
+
                     if "e" not in valstr:
                         valstr = valstr.rstrip("0").rstrip(".")
             else:

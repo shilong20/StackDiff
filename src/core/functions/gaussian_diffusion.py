@@ -50,7 +50,7 @@ def save_image(img, save_dir, idx):
     result = tensor2im(img)
     im_save_path = os.path.join(save_dir, f"{idx:05d}.png")
     Image.fromarray(np.array(result)).save(im_save_path)
-    
+
 def color2gray(x):
     coef=1/3
     x = x[:,0,:,:] * coef + x[:,1,:,:]*coef +  x[:,2,:,:]*coef
@@ -60,7 +60,7 @@ def gray2color(x):
     x = x[:,0,:,:]
     coef=1/3
     base = coef**2 + coef**2 + coef**2
-    return torch.stack((x*coef/base, x*coef/base, x*coef/base), 1)    
+    return torch.stack((x*coef/base, x*coef/base, x*coef/base), 1)
 
 def MeanUpsample(x, scale):
     n, c, h, w = x.shape
@@ -211,7 +211,7 @@ class GaussianDiffusion:
     def _undo(self, img_out, t):
         beta = _extract_into_tensor(self.betas, t, img_out.shape)
 
-        img_in_est = th.sqrt(1 - beta) * img_out + \
+        img_in_est = th.sqrt(1 - beta) * img_out +\
             th.sqrt(beta) * th.randn_like(img_out)
 
         return img_in_est
@@ -295,7 +295,7 @@ class GaussianDiffusion:
             if clip_denoised:
                 return x.clamp(-1, 1)
             return x
-        
+
 
 
         if self.model_mean_type == ModelMeanType.PREVIOUS_X:
@@ -313,17 +313,17 @@ class GaussianDiffusion:
             model_mean, _, _ = self.q_posterior_mean_variance(
                 x_start=x0_t, x_t=x, t=t
             )
-            
+
 
             ## DDNM core ##
-            
+
             if x0_t is not None:
 
                 A, Ap = model_kwargs['A'], model_kwargs['Ap']
                 sigma_y = model_kwargs['sigma_y']
                 #y = model_kwargs['y_img']
                 Apy = model_kwargs['Apy']
-                
+
                 sigma_t = th.sqrt(_extract_into_tensor(self.posterior_variance, t, x0_t.shape))[0][0][0][0]
                 a_t = _extract_into_tensor(self.posterior_mean_coef1, t, x0_t.shape)[0][0][0][0]
 
@@ -338,10 +338,10 @@ class GaussianDiffusion:
                 # Eq. 17
                 #x0_t_hat = x0_t + lambda_t*Ap(y-A(x0_t))
                 x0_t_hat = lambda_t*Apy + x0_t - lambda_t*Ap(A(x0_t))
-                
-                
 
-                # mask-shift trick 
+
+
+                # mask-shift trick
                 if model_kwargs['shift_w']==0 and model_kwargs['shift_h']==0:
                     pass
                 elif model_kwargs['shift_w']==0 and model_kwargs['shift_h']!=0:
@@ -357,9 +357,9 @@ class GaussianDiffusion:
                     w_r = w_l+128
                     h_l = int(128*model_kwargs['shift_h'])
                     h_r = h_l+256
-                    if (model_kwargs['shift_w']==model_kwargs['shift_w_total']-1) and (model_kwargs['W_target']%128!=0): 
+                    if (model_kwargs['shift_w']==model_kwargs['shift_w_total']-1) and (model_kwargs['W_target']%128!=0):
                         w_l = w_l-128+model_kwargs['W_target']%128
-                        if (model_kwargs['shift_h']==model_kwargs['shift_h_total']-1) and (model_kwargs['H_target']%128!=0): 
+                        if (model_kwargs['shift_h']==model_kwargs['shift_h_total']-1) and (model_kwargs['H_target']%128!=0):
                             h_l_tmp = h_l-128+model_kwargs['H_target']%128
                             x0_t_hat[:,:,:,0:256-model_kwargs['W_target']%128] = model_kwargs['x_temp'][:,:,h_l_tmp:h_r,w_l:w_r].to('cuda')
                         else:
@@ -384,10 +384,10 @@ class GaussianDiffusion:
                     image_savepath = os.path.join('results/'+model_kwargs['save_path']+'/'+str(model_kwargs['shift_h'])+'_'+str(model_kwargs['shift_w']))
                     os.makedirs(image_savepath, exist_ok=True)
                     save_image(x0_t_hat[0], image_savepath, t[0])
-            
+
                 model_mean, _, _ = self.q_posterior_mean_variance(x_start=x0_t_hat, x_t=x, t=t)
-                model_variance = gamma_t # model_variance                
-            
+                model_variance = gamma_t # model_variance
+
         else:
             raise NotImplementedError(self.model_mean_type)
 
@@ -428,7 +428,7 @@ class GaussianDiffusion:
             gradient.float()
         )
         return new_mean
-    
+
     def p_sample(
         self,
         model,
@@ -460,7 +460,7 @@ class GaussianDiffusion:
                  - 'sample': a random sample from the model.
                  - 'x0_t': a prediction of x_0.
         """
-        
+
 
         out = self.p_mean_variance(
             model,
@@ -473,7 +473,7 @@ class GaussianDiffusion:
 
         nonzero_mask = (
             (t != 0).float().view(-1, *([1] * (len(x.shape) - 1)))
-        ) 
+        )
 
         if cond_fn is not None:
             out["mean"] = self.condition_mean(
@@ -483,8 +483,8 @@ class GaussianDiffusion:
         noise = th.randn_like(x)
         #sample = out["mean"] + nonzero_mask * \
         #    th.exp(0.5 * out["log_variance"]) * noise# - out["xt_grad"]
-        
-        sample = out["mean"] + nonzero_mask * \
+
+        sample = out["mean"] + nonzero_mask *\
             th.sqrt(th.ones(1,device='cuda')*out["variance"]) * noise
 
         result = {"sample": sample,
@@ -578,8 +578,8 @@ class GaussianDiffusion:
 
 
         # initialization
-        gt = model_kwargs['gt'] 
-        scale = model_kwargs['scale'] 
+        gt = model_kwargs['gt']
+        scale = model_kwargs['scale']
 
         if 256%scale!=0:
             raise ValueError("Please set a SR scale divisible by 256")
@@ -590,10 +590,10 @@ class GaussianDiffusion:
         if model_kwargs['resize_y']:
             resize_y = lambda z: MeanUpsample(z,scale)
             gt = resize_y(gt)
-            
+
 
         if model_kwargs['deg']=='sr_averagepooling':
-            scale=model_kwargs['scale'] 
+            scale=model_kwargs['scale']
             A = torch.nn.AdaptiveAvgPool2d((256//scale,256//scale))
             Ap = lambda z: MeanUpsample(z,scale)
 
@@ -608,25 +608,25 @@ class GaussianDiffusion:
             mask = model_kwargs.get('gt_keep_mask')
             A1 = lambda z: z*mask
             A1p = A1
-            
+
             A2 = lambda z: color2gray(z)
             A2p = lambda z: gray2color(z)
-            
+
             scale=model_kwargs['scale']
             A3 = torch.nn.AdaptiveAvgPool2d((256//scale,256//scale))
             A3p = lambda z: MeanUpsample(z,scale)
-            
+
             A = lambda z: A3(A2(A1(z)))
             Ap = lambda z: A1p(A2p(A3p(z)))
 
-            A_temp = A    
+            A_temp = A
         elif model_kwargs['deg']=='colorization':
             A = lambda z: color2gray(z)
             Ap = lambda z: gray2color(z)
 
             A_temp = A
         elif model_kwargs['deg']=='sr_color':
-            scale=model_kwargs['scale'] 
+            scale=model_kwargs['scale']
             A1 = torch.nn.AdaptiveAvgPool2d((256//scale,256//scale))
             A1p = lambda z: MeanUpsample(z,scale)
             A2 = lambda z: color2gray(z)
@@ -635,9 +635,9 @@ class GaussianDiffusion:
             Ap = lambda z: A1p(A2p(z))
 
             A1_temp = torch.nn.AdaptiveAvgPool2d((gt.shape[2]//scale,gt.shape[3]//scale))
-            A_temp = lambda z: A2(A1_temp(z))            
+            A_temp = lambda z: A2(A1_temp(z))
         else:
-            raise NotImplementedError("degradation type not supported")         
+            raise NotImplementedError("degradation type not supported")
 
         model_kwargs['A'] = A
         model_kwargs['Ap'] = Ap
@@ -652,7 +652,7 @@ class GaussianDiffusion:
         image_savepath = os.path.join('results/'+model_kwargs['save_path']+'/Apy')
         os.makedirs(image_savepath, exist_ok=True)
         save_image(Apy_temp[0], image_savepath, 0)
-        
+
         image_savepath = os.path.join('results/'+model_kwargs['save_path']+'/y')
         os.makedirs(image_savepath, exist_ok=True)
         save_image(y_temp[0], image_savepath, 0)
@@ -703,7 +703,7 @@ class GaussianDiffusion:
                                              device=device)
 
                         # normal DDNM sampling
-                        if t_cur < t_last:  
+                        if t_cur < t_last:
                             with th.no_grad():
                                 image_before_step = image_after_step.clone()
                                 out = self.p_sample(

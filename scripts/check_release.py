@@ -1,7 +1,7 @@
 """
-【作用概述】检查 StackDiff 待发布工作区是否误包含大文件、模型权重、压缩包、办公文档、baseline 目录或本机绝对路径；输出问题列表并以非零状态码提示发布前需要处理。
-【关联说明】文件/模块：.gitignore（发布忽略规则）；configs/*.yml（权重路径检查）；README.md 与 models/checkpoints/README.md（公开权重路径约定）。
-【命令行用法】python scripts/check_release.py（参数：无需参数；在仓库根目录运行）
+Purpose: Validate the StackDiff public release workspace for oversized files, private artifacts, local absolute paths, and non-public checkpoint references. The script prints release issues and exits with a non-zero status when cleanup is required.
+Related files: .gitignore, README.md, models/checkpoints/README.md, and configs/separate/ReS2.yml.
+CLI usage: python scripts/check_release.py (run from the repository root; no arguments are required).
 """
 
 from __future__ import annotations
@@ -36,9 +36,6 @@ FORBIDDEN_DIRS = {
 }
 ALLOWED_CHECKPOINT_PATHS = {
     "models/checkpoints/ReS2/ema_0.9999_200000.pt",
-    "models/checkpoints/MoS2/ema_0.9999_200000.pt",
-    "models/checkpoints/MoTe2/ema_0.9999_200000.pt",
-    "models/checkpoints/TaS2/ema_0.9999_200000.pt",
 }
 
 
@@ -58,7 +55,7 @@ def iter_files() -> list[Path]:
 
 def is_public_runtime_config(path: Path) -> bool:
     rel_path = rel(path)
-    return rel_path.startswith("configs/separate/") or rel_path.startswith("configs/sample/")
+    return rel_path == "configs/separate/ReS2.yml"
 
 
 def main() -> int:

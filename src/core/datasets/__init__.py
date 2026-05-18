@@ -1,7 +1,7 @@
 """
-【作用概述】提供分解/推理阶段的数据集加载入口：递归枚举输入目录中的图像文件并读取为张量，同时支持按需应用预处理计划（auto-crop 的裁剪/缩放）与指定文件白名单；输出为 (tensor, class, rel_path) 供推理管线使用。
-【关联说明】文件/模块：src/main.py（构造 args.path_y / args.image_crop_plans / args.selected_files 等）；src/core/utils/image_preprocessor.py（apply_preprocess_plan）；configs/separate/*.yml（processing.auto_crop / processing.selected_files 等）。
-【命令行用法】本模块不直接作为脚本运行；请通过 `python src/main.py --config configs/separate/ReS2.yml` 间接调用。
+Purpose: Provide dataset loading helpers for StackDiff inference. The module enumerates image files, applies optional preprocessing plans, and returns tensors plus relative image identifiers to the sampler.
+Related files: src/main.py, src/core/utils/image_preprocessor.py, and configs/separate/ReS2.yml.
+CLI usage: This module is imported by src/main.py and is not intended to be executed directly.
 """
 
 import os
@@ -19,7 +19,7 @@ from utils.image_preprocessor import apply_preprocess_plan
 IMG_EXTS = ('.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp')
 
 class FlatImageDataset(Dataset):
-    """支持递归读取的平铺图像数据集，返回 (tensor, class=0, filename)。"""
+    """Internal helper."""
 
     def __init__(
         self,
@@ -48,7 +48,7 @@ class FlatImageDataset(Dataset):
         def _add_lookup_entry(key: str, path: str):
             if not key:
                 return
-            # 避免重复添加同一路径
+
             if path not in lookup.setdefault(key, []):
                 lookup[key].append(path)
             normalized = _normalize_key(key)
@@ -85,7 +85,7 @@ class FlatImageDataset(Dataset):
                 _add_lookup_entry(stem, full_path)
 
         if not all_candidates:
-            raise FileNotFoundError(f"未在目录中找到图片: {root}")
+            raise FileNotFoundError('Invalid StackDiff configuration or runtime parameter.')
 
         if selected_files:
             self.samples = []
@@ -95,7 +95,7 @@ class FlatImageDataset(Dataset):
                     alt = _normalize_key(selected)
                     candidates = lookup.get(alt) or lookup.get(os.path.splitext(alt)[0])
                 if not candidates:
-                    print(f"警告：未找到指定文件 {selected}")
+                    print('Invalid StackDiff configuration or runtime parameter.')
                     continue
                 for path in candidates:
                     rel_path = path_to_rel.get(path)
@@ -104,9 +104,9 @@ class FlatImageDataset(Dataset):
                         rel_path = _normalize_key(base)
                     self.samples.append((path, rel_path, base))
             if not self.samples:
-                raise FileNotFoundError(f"未找到任何指定的图片文件: {selected_files}")
+                raise FileNotFoundError('Invalid StackDiff configuration or runtime parameter.')
         else:
-            # 默认加载全部，按相对路径排序以保证稳定
+
             self.samples = sorted(all_candidates, key=lambda x: x[1])
 
     def __len__(self):
@@ -197,7 +197,7 @@ def get_dataset(args, config):
         test_dataset = dataset
         return dataset, test_dataset
 
-    # 保留原有逻辑以兼容其他数据集配置
+
     if config.data.random_flip is False:
         tran_transform = test_transform = transforms.Compose(
             [transforms.Resize(config.data.image_size), transforms.ToTensor()]

@@ -1,15 +1,7 @@
 """
-【作用概述】在 Re 原子点云（N×2）上提取不重叠的 Re4 四元环（4-cycle/平行四边形），并提供基于 seed 的模板吸附平移生长工具。
-核心输入/输出：
-- 输入：原子点云 `pts`（像素坐标系 x-right/y-down），以及（可选）理论 da/db 长度换算到像素后的平移步长。
-- 输出：四元环（4 个点索引或 4 个点坐标）、质心、以及用于后续链方向/da-db 推导的辅助统计。
-
-【关联说明】文件/模块：
-- tools/pred_dadb/pipeline_single.py（单图 pipeline：调用本模块提取四元环与质心）
-- tools/pred_dadb/pipeline_bilayer_root.py（批量双层分类：间接依赖四元环提取）
-- tools/pred_dadb/vis_scripts/*（部分可视化脚本会复用 `_infer_sideA_A_from_highT1_path`）
-
-【命令行用法】本文件不直接运行（仅作为库模块）。
+Purpose: Extract non-overlapping Re4 cycles from Re atom point clouds and provide seed/template growth helpers for ReS2 lattice analysis. Outputs include cycle indices, centroids, and diagnostics used for da/db estimation.
+Related files: tools/pred_dadb/pipeline_single.py, tools/pred_dadb/centroid_chain.py, and tools/pred_dadb/pipeline_bilayer_root.py.
+CLI usage: This module is imported by the da/db pipelines and is not intended to be executed directly.
 """
 
 from __future__ import annotations
@@ -26,10 +18,7 @@ _RE_FOV_NM = re.compile(r"_(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$")
 
 
 def _infer_sideA_A_from_highT1_path(img_path: Path) -> Optional[float]:
-    """
-    从 HighT1 文件所在目录名推断视野尺寸（nm），并换算为 Å。
-    例如：..._2.79x2.79 -> sideA_A ≈ 2.79nm * 10 = 27.9Å
-    """
+    """Internal helper."""
     for part in [img_path.parent.name, img_path.parent.parent.name]:
         m = _RE_FOV_NM.search(str(part))
         if not m:
@@ -42,9 +31,7 @@ def _infer_sideA_A_from_highT1_path(img_path: Path) -> Optional[float]:
 
 
 def _global_nn_median(tree, pts: np.ndarray) -> float:
-    """
-    全局最近邻距离的中位数（排除自身）。
-    """
+    """Internal helper."""
     pts = np.asarray(pts, dtype=np.float64).reshape(-1, 2)
     if pts.shape[0] < 2:
         return float("nan")
@@ -63,9 +50,7 @@ def _unit(v: np.ndarray) -> np.ndarray:
 
 
 def _seg_intersect(a1: np.ndarray, a2: np.ndarray, b1: np.ndarray, b2: np.ndarray) -> bool:
-    """
-    严格线段相交（不含端点接触）。假设 disjoint 点集，因此端点接触通常不发生。
-    """
+    """Internal helper."""
     a1 = np.asarray(a1, dtype=np.float64).reshape(2)
     a2 = np.asarray(a2, dtype=np.float64).reshape(2)
     b1 = np.asarray(b1, dtype=np.float64).reshape(2)
@@ -81,7 +66,7 @@ def _seg_intersect(a1: np.ndarray, a2: np.ndarray, b1: np.ndarray, b2: np.ndarra
     qpxr = cross(q_p, r)
 
     if abs(rxs) < 1e-12:
-        # 平行（含共线）：按“不相交”处理（避免把近似共线边误判为交叉）
+
         return False
 
     t = cross(q_p, s) / rxs
@@ -111,12 +96,7 @@ def _enumerate_cycles_by_dense_triangles(
     *,
     dist_limit: float,
 ) -> Tuple[List[Tuple[int, int, int, int]], Dict]:
-    """
-    在“短键图”中枚举菱形四元环：
-    - 对每条短键边 (i,j)，找共同邻居 CN=N(i)∩N(j)；
-    - 对 CN 中任意两点 {k,l}，构造四元环 (k,i,l,j)（外周顺序）。
-    返回去重后的候选 cycles 列表（未做 disjoint 筛选）。
-    """
+    """Internal helper."""
     from scipy.spatial import cKDTree
 
     pts = np.asarray(pts, dtype=np.float64).reshape(-1, 2)
@@ -154,12 +134,7 @@ def _enumerate_cycles_by_dense_triangles(
 
 
 def _cycle_edges(pts: np.ndarray, cyc: Tuple[int, int, int, int]) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    cyc 顺序约定：(p0,p1,p2,p3) 沿外周。
-    返回：
-      - edges: (4,2) 各边向量 p{i+1}-p{i}
-      - lens: (4,) 各边长度
-    """
+    """Internal helper."""
     pts = np.asarray(pts, dtype=np.float64).reshape(-1, 2)
     p0, p1, p2, p3 = [int(x) for x in cyc]
     vs = np.stack([pts[p1] - pts[p0], pts[p2] - pts[p1], pts[p3] - pts[p2], pts[p0] - pts[p3]], axis=0).astype(np.float64)
@@ -174,9 +149,7 @@ def _cycle_center(pts: np.ndarray, cyc: Tuple[int, int, int, int]) -> np.ndarray
 
 
 def _cycle_long_diag_unit(pts: np.ndarray, cyc: Tuple[int, int, int, int]) -> Tuple[np.ndarray, float, float]:
-    """
-    返回四元环“长对角线”的单位方向，以及两条对角线长度。
-    """
+    """Internal helper."""
     pts = np.asarray(pts, dtype=np.float64).reshape(-1, 2)
     p0, p1, p2, p3 = [int(x) for x in cyc]
     d0 = (pts[p2] - pts[p0]).astype(np.float64)
@@ -197,9 +170,7 @@ def _filter_flip_cycles_by_dominant_long_diag(
     tol_deg: float = 25.0,
     min_cluster_size: int = 4,
 ) -> Tuple[List[Tuple[int, int, int, int]], Optional[np.ndarray], Dict]:
-    """
-    剔除“flip 四元环”：长对角线方向落在与主簇近似正交的一簇。
-    """
+    """Internal helper."""
     pts = np.asarray(pts, dtype=np.float64).reshape(-1, 2)
     cyc_list = [tuple(int(x) for x in c) for c in cycles]
     if len(cyc_list) < int(max(1, min_cluster_size)):
@@ -279,9 +250,7 @@ def _filter_flip_cycles_by_dominant_long_diag(
 
 
 def _cycle_score_re4(pts: np.ndarray, cyc: Tuple[int, int, int, int]) -> Tuple[float, Dict]:
-    """
-    Re4 菱形几何评分（越大越好）。
-    """
+    """Internal helper."""
     vs, ls = _cycle_edges(pts, cyc)
     m = float(np.mean(ls))
     if m < 1e-6:
@@ -370,9 +339,7 @@ def _select_disjoint_cycles_scored(
     accepted_polys: List[List[np.ndarray]],
     no_intersect: bool,
 ) -> Tuple[List[Tuple[int, int, int, int]], Dict]:
-    """
-    在已有 used/accepted_polys 基础上，按评分优先做 disjoint 选择。
-    """
+    """Internal helper."""
     pts = np.asarray(pts, dtype=np.float64).reshape(-1, 2)
     used_global = np.asarray(used_global, dtype=bool).reshape(-1)
 
@@ -385,7 +352,7 @@ def _select_disjoint_cycles_scored(
         poly = pts[np.asarray(idxs, dtype=np.int32)]
         c = np.mean(poly, axis=0)
         d2 = float(np.sum((c - center) ** 2))
-        # 菱形质量只用作 tie-break
+
         vs, ls = _cycle_edges(pts, idxs)
         m = float(np.mean(ls))
         q = float(np.std(ls) / m) if m > 1e-9 else 1e9
@@ -422,10 +389,7 @@ def _template_match_4pts_unique(
     match_k: int,
     used_global: np.ndarray,
 ) -> Optional[List[int]]:
-    """
-    在全原子点云上做“模板吸附”匹配：给定 4 个预测点 pred_pts（4×2），
-    在半径 snap_r 内找到 4 个互不相同且未被占用的真实原子索引。
-    """
+    """Internal helper."""
     pts = np.asarray(pts, dtype=np.float64).reshape(-1, 2)
     pred_pts = np.asarray(pred_pts, dtype=np.float64).reshape(4, 2)
     used_global = np.asarray(used_global, dtype=bool).reshape(-1)
@@ -508,9 +472,7 @@ def _propagate_cycles_atom_template(
     accepted_polys: List[List[np.ndarray]],
     max_hop: int = 3,
 ) -> Tuple[List[Tuple[int, int, int, int]], Dict]:
-    """
-    在“全原子点云”上用 seed 模板做配准 + 平移生长，返回新增 cycles（点索引四元组）。
-    """
+    """Internal helper."""
     from scipy.spatial import cKDTree
 
     P = np.asarray(pts, dtype=np.float64).reshape(-1, 2)
@@ -638,4 +600,3 @@ __all__ = [
     "_select_disjoint_cycles_scored",
     "_propagate_cycles_atom_template",
 ]
-

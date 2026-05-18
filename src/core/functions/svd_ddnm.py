@@ -1,3 +1,9 @@
+"""
+Purpose: Implement DDNM/DDNM+ diffusion update loops and helper transforms used by StackDiff's linear inverse-problem sampler. Inputs are tensors, model callbacks, SVD-style operators, and sampling config; outputs are sampled tensors and optional intermediate states.
+Related files: src/core/guided_diffusion/diffusion.py, src/core/functions/svd_operators.py, and configs/separate/ReS2.yml.
+CLI usage: This module is imported by src/core/guided_diffusion/diffusion.py and is not intended to be executed directly.
+"""
+
 import torch
 from tqdm import tqdm
 import torchvision.utils as tvu
@@ -27,18 +33,18 @@ def ddnm_diffusion(x, model, b, eta, A_funcs, y, cls_fn=None, classes=None, conf
         xs = [x]
 
         # generate time schedule
-        times = get_schedule_jump(config.time_travel.T_sampling, 
-                               config.time_travel.travel_length, 
+        times = get_schedule_jump(config.time_travel.T_sampling,
+                               config.time_travel.travel_length,
                                config.time_travel.travel_repeat,
                               )
         time_pairs = list(zip(times[:-1], times[1:]))
-        
+
         # reverse diffusion sampling
         for i, j in tqdm(time_pairs):
             i, j = i*skip, j*skip
-            if j<0: j=-1 
+            if j<0: j=-1
 
-            if j < i: # normal sampling 
+            if j < i: # normal sampling
                 t = (torch.ones(n) * i).to(x.device)
                 next_t = (torch.ones(n) * j).to(x.device)
                 at = compute_alpha(b, t.long())
@@ -71,7 +77,7 @@ def ddnm_diffusion(x, model, b, eta, A_funcs, y, cls_fn=None, classes=None, conf
                 next_t = (torch.ones(n) * j).to(x.device)
                 at_next = compute_alpha(b, next_t.long())
                 x0_t = x0_preds[-1].to('cuda')
-                
+
                 xt_next = at_next.sqrt() * x0_t + torch.randn_like(x0_t) * (1 - at_next).sqrt()
 
                 xs.append(xt_next.to('cpu'))
@@ -89,11 +95,11 @@ def ddnm_plus_diffusion(x, model, b, eta, A_funcs,x_orig, sigma_y, cls_fn=None, 
         # xs = [x]
 
         # generate time schedule
-        times = get_schedule_jump(config.time_travel.T_sampling, 
-                               config.time_travel.travel_length, 
+        times = get_schedule_jump(config.time_travel.T_sampling,
+                               config.time_travel.travel_length,
                                config.time_travel.travel_repeat,
                               )
-        time_pairs = list(zip(times[:-1], times[1:])) 
+        time_pairs = list(zip(times[:-1], times[1:]))
 
         # prepare for shift
         H_target = x.size(2)
@@ -106,7 +112,7 @@ def ddnm_plus_diffusion(x, model, b, eta, A_funcs,x_orig, sigma_y, cls_fn=None, 
 
         with tqdm(total=shift_h_total*shift_w_total) as pbar:
             pbar.set_description('total shifts')
-            
+
             # shift along H
             for shift_h in range(shift_h_total):
                 h_l = int(64*shift_h)
@@ -117,10 +123,10 @@ def ddnm_plus_diffusion(x, model, b, eta, A_funcs,x_orig, sigma_y, cls_fn=None, 
                     x_temp=finalresult
                     w_l = int(64*shift_w)
                     w_r = w_l+128
-                
-                    # 范围已确定
 
-                    # 调整数据大小以适应原模型
+
+
+
                     x0_preds = []
                     xs = [x[:, :, h_l:h_r, w_l:w_r]]
                     x_orig_patch = x_orig[:, :, h_l:h_r, w_l:w_r]
@@ -136,9 +142,9 @@ def ddnm_plus_diffusion(x, model, b, eta, A_funcs,x_orig, sigma_y, cls_fn=None, 
                     # reverse diffusion sampling
                     for i, j in tqdm(time_pairs):
                         i, j = i*skip, j*skip
-                        if j<0: j=-1 
+                        if j<0: j=-1
 
-                        if j < i: # normal sampling 
+                        if j < i: # normal sampling
                             t = (torch.ones(n) * i).to(x.device)
                             next_t = (torch.ones(n) * j).to(x.device)
                             at = compute_alpha(b, t.long())
@@ -162,7 +168,7 @@ def ddnm_plus_diffusion(x, model, b, eta, A_funcs,x_orig, sigma_y, cls_fn=None, 
                             ).reshape(x0_t.size(0), -1), at_next.sqrt()[0, 0, 0, 0], sigma_y, sigma_t, eta).reshape(*x0_t.size())
                             # print('x0_t_hat.shape',x0_t_hat.shape)
 
-                            # mask-shift trick 
+                            # mask-shift trick
                             if shift_w == 0 and shift_h == 0:
                                 pass
                             elif shift_w == 0 and shift_h != 0:
@@ -183,7 +189,7 @@ def ddnm_plus_diffusion(x, model, b, eta, A_funcs,x_orig, sigma_y, cls_fn=None, 
 
                             # Eq. 51
                             xt_next = at_next.sqrt() * x0_t_hat + A_funcs.Lambda_noise(
-                                torch.randn_like(x0_t).reshape(x0_t.size(0), -1), 
+                                torch.randn_like(x0_t).reshape(x0_t.size(0), -1),
                                 at_next.sqrt()[0, 0, 0, 0], sigma_y, sigma_t, eta, et.reshape(et.size(0), -1)).reshape(*x0_t.size())
 
                             x0_preds.append(x0_t.to('cpu'))
@@ -193,7 +199,7 @@ def ddnm_plus_diffusion(x, model, b, eta, A_funcs,x_orig, sigma_y, cls_fn=None, 
                             next_t = (torch.ones(n) * j).to(x.device)
                             at_next = compute_alpha(b, next_t.long())
                             x0_t = x0_preds[-1].to('cuda')
-                                
+
                             xt_next = at_next.sqrt() * x0_t + torch.randn_like(x0_t) * (1 - at_next).sqrt()
 
                             xs.append(xt_next.to('cpu'))

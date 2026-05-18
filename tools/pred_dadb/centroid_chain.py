@@ -1,15 +1,7 @@
 """
-【作用概述】从 Re4 四元环的质心点云中估计 Re 链方向，并基于“质心近邻短边”反推出 da/db（像素向量）。
-核心输入/输出：
-- 输入：`centroids (N,2)`（四元环质心坐标，像素坐标系 x-right/y-down），可选 `seed_edge_dirs`（seed 四元环两条边方向）。
-- 输出：
-  - `chain_unit_xy`：Re 链方向单位向量（轴向，v 与 -v 等价）
-  - `debug`：包含候选角度、剔除过程、近邻短边统计，以及推导出的 `da_vec_px/db_vec_px`（若样本足够）
-
-【关联说明】文件/模块：
-- tools/pred_dadb/pipeline_single.py（单图 pipeline：四元环->质心->链方向->da/db）
-- tools/pred_dadb/cycles.py（四元环提取中的角度/夹角工具；提供 seed 四边形边方向）
-- tools/pred_dadb/vis_scripts/*（链方向/候选方向的可视化脚本）
+Purpose: Estimate Re-chain directions from Re4-cycle centroids and infer da/db pixel vectors from centroid-neighbor geometry. It returns direction vectors and diagnostic statistics for downstream classification.
+Related files: tools/pred_dadb/cycles.py, tools/pred_dadb/pipeline_single.py, and tools/pred_dadb/pipeline_bilayer_root.py.
+CLI usage: This module is imported by the da/db pipelines and is not intended to be executed directly.
 """
 
 from __future__ import annotations
@@ -22,9 +14,7 @@ from scipy.spatial import cKDTree
 
 
 def _axis_angle_deg(u: np.ndarray, v: np.ndarray) -> float:
-    """
-    轴向夹角（[0,90]），即把 v 与 -v 视为同一方向：使用 abs(cos)。
-    """
+    """Internal helper."""
     uu = np.asarray(u, dtype=np.float64).reshape(2)
     vv = np.asarray(v, dtype=np.float64).reshape(2)
     nu = float(np.hypot(uu[0], uu[1]))
@@ -37,17 +27,14 @@ def _axis_angle_deg(u: np.ndarray, v: np.ndarray) -> float:
 
 
 def _kmeans_1d_two_clusters(x: np.ndarray, *, n_iter: int = 25) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    极简 1D k-means(k=2)，无 sklearn 依赖。
-    返回 (labels, centers)；labels 为 {0,1}。
-    """
+    """Internal helper."""
     x = np.asarray(x, dtype=np.float64).reshape(-1)
     if x.size == 0:
         return np.zeros((0,), dtype=np.int64), np.array([0.0, 0.0], dtype=np.float64)
     if x.size == 1:
         return np.zeros((1,), dtype=np.int64), np.array([float(x[0]), float(x[0])], dtype=np.float64)
 
-    # 初始化：用分位数避免被极端值带偏
+
     c0 = float(np.quantile(x, 0.20))
     c1 = float(np.quantile(x, 0.80))
     if abs(c1 - c0) < 1e-9:
@@ -70,11 +57,7 @@ def _kmeans_1d_two_clusters(x: np.ndarray, *, n_iter: int = 25) -> Tuple[np.ndar
 
 
 def _select_two_main_axes(candidates_deg: Sequence[float], strengths: Optional[Sequence[Tuple[float, int]]] = None) -> List[float]:
-    """
-    从候选角度中选出两条“主轴”：
-    - 优先满足两者相差约 60°（允许一定容差）；
-    - 其次按强度（直方图计数）更大的优先。
-    """
+    """Internal helper."""
     cand = [float(a) for a in candidates_deg]
     if not cand:
         return []
@@ -112,9 +95,7 @@ def _select_topk_candidate_axes(
     k: int = 3,
     min_sep_deg: float = 10.0,
 ) -> List[float]:
-    """
-    从候选角度中选出 top-k（默认 3）条“候选主方向”。
-    """
+    """Internal helper."""
     cand = [float(a) for a in candidates_deg]
     if not cand:
         return []
@@ -144,9 +125,7 @@ def _drop_least_parallel_to_seed_edges(
     *,
     seed_edge_dirs: Tuple[np.ndarray, np.ndarray],
 ) -> Tuple[List[float], Optional[float], Dict]:
-    """
-    根据 seed 四元环的两条边方向，剔除“与两条边都最不平行”的那条候选方向（常见为对角线/伪主轴）。
-    """
+    """Internal helper."""
     cand = [float(a) for a in cand_angles_deg]
     if len(cand) <= 2:
         return list(cand), None, {"reason": "no_need_drop", "n": int(len(cand))}
@@ -184,9 +163,7 @@ def _pick_candidate_angles_from_centroids(
     max_candidates: int = 6,
     min_sep_deg: float = 10.0,
 ) -> Tuple[List[float], Dict]:
-    """
-    候选方向生成：用质心点云的 kNN 向量角度直方图找主方向峰值。
-    """
+    """Internal helper."""
     C = np.asarray(centroids, dtype=np.float64).reshape(-1, 2)
     if C.shape[0] < 2:
         return [], {"reason": "too_few_centroids"}
@@ -281,9 +258,7 @@ def _neighbor_edges_for_two_axes(
     angle_sim_tol_deg: float = 18.0,
     min_edges: int = 3,
 ) -> Tuple[List[float], List[float], Dict]:
-    """
-    直接把“相邻点”相连形成候选边集合，然后做边长/平行度筛选与分类。
-    """
+    """Internal helper."""
     C = np.asarray(centroids, dtype=np.float64).reshape(-1, 2)
     if C.shape[0] < 2:
         return [], [], {"reason": "too_few_centroids"}
@@ -387,9 +362,7 @@ def _choose_by_neighbor_min_edge(
     angle_sim_tol_deg: float = 18.0,
     min_edges: int = 3,
 ) -> Tuple[Optional[float], Dict]:
-    """
-    用“相邻边集合”的平均边长最小来仲裁两候选方向。
-    """
+    """Internal helper."""
     l0, l1, dbg0 = _neighbor_edges_for_two_axes(
         centroids,
         ang0_deg=float(ang0_deg),
@@ -425,9 +398,7 @@ def estimate_dadb_from_centroids_edges_and_chain(
     mean_len1: float,
     chain_dir: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
-    """
-    用“质心相邻边”估计 da/db（像素单位的 2D 向量）。
-    """
+    """Internal helper."""
     axes = [float(a) for a in main_axes_deg]
     if len(axes) < 2:
         return np.zeros((2,), dtype=np.float64), np.zeros((2,), dtype=np.float64), {"reason": "too_few_axes"}
@@ -488,10 +459,7 @@ def solve_re_chain_from_centroids(
     k_neighbors: int = 6,
     max_candidates: int = 6,
 ) -> Tuple[np.ndarray, Dict]:
-    """
-    输入：centroids (N,2)
-    输出：链方向单位向量（x-right/y-down），以及 debug（候选角度与 dadb 推导信息）。
-    """
+    """Internal helper."""
     cand, dbg0 = _pick_candidate_angles_from_centroids(
         centroids, k_neighbors=int(k_neighbors), max_candidates=int(max_candidates), min_sep_deg=10.0
     )

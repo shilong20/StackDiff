@@ -1,14 +1,7 @@
 """
-【作用概述】从单层图像（仿真/实验，128x128）中自动提取 Re 原子二维像素坐标（点云）。
-核心输入/输出：
-- 输入：灰度图或 RGB 图（numpy 数组）；默认假设原子为“亮点”，坐标系为图像坐标（x-right/y-down）。
-- 输出：点云 `points_px`（N×2，float32），并可选返回调试信息（阈值、面积阈值、轮廓数等）。
-
-【关联说明】文件/模块：
-- tools/pred_dadb/pipeline_single.py（单图 pipeline：调用本模块提原子点云）
-- tools/pred_dadb/pipeline_bilayer_root.py（批量双层分类：默认也落盘 atoms.json）
-
-【命令行用法】本文件不直接运行（由上述脚本调用）。
+Purpose: Detect Re atom coordinates from a single-layer ReS2 image. The main function accepts a grayscale/RGB image array and returns atom points in image coordinates plus optional diagnostics.
+Related files: tools/pred_dadb/pipeline_single.py and tools/pred_dadb/pipeline_bilayer_root.py.
+CLI usage: This module is imported by the da/db pipelines and is not intended to be executed directly.
 """
 
 from __future__ import annotations
@@ -23,21 +16,21 @@ from scipy import ndimage
 
 @dataclass(frozen=True)
 class AtomDetectConfig:
-    # 是否启用高通（实验图通常需要；仿真图可关闭）
+
     use_highpass: bool = True
-    # 背景抑制的平滑尺度（像素）；值越大，越强调“亮点”
+
     bg_sigma_px: float = 6.0
-    # 二值化阈值倍数：阈值=均值*bina_thre
+
     bina_thre: float = 1.8
-    # 最小面积阈值（以 512x512 为基准）
+
     min_area_threshold: float = 100.0
-    # 是否按图像尺寸缩放面积阈值（默认按 512 归一）
+
     auto_area_scale: bool = True
-    # 面积阈值的参考尺寸
+
     area_scale_ref: int = 512
-    # NMS 的最小距离（像素）
+
     min_distance_px: float = 5.0
-    # 最多返回多少个原子点
+
     max_points: int = 512
 
 
@@ -61,14 +54,10 @@ def detect_atoms_from_image(
     cfg: AtomDetectConfig = AtomDetectConfig(),
     return_debug: bool = False,
 ) -> Tuple[np.ndarray, Optional[Dict]]:
-    """
-    返回 (points_px, debug)：
-      - points_px: (N,2) float32, [x,y] in pixel coords (y-down)
-      - debug: 可选，包含 hp/阈值/面积阈值/轮廓数等
-    """
+    """Internal helper."""
     g = _to_gray_float01(img)
 
-    # high-pass（可选）
+
     if bool(cfg.use_highpass):
         bg = ndimage.gaussian_filter(g, sigma=float(cfg.bg_sigma_px)).astype(np.float32)
         hp = (g - bg).astype(np.float32)
@@ -87,7 +76,7 @@ def detect_atoms_from_image(
     contours, _ = cv2.findContours(binary_u8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     n_contours = int(len(contours))
 
-    # 面积阈值（按尺寸缩放）
+
     area_thr = float(cfg.min_area_threshold)
     if bool(cfg.auto_area_scale):
         ref = float(max(1, int(cfg.area_scale_ref)))
@@ -120,7 +109,7 @@ def detect_atoms_from_image(
             }
         return np.zeros((0, 2), dtype=np.float32), debug
 
-    # greedy NMS by Euclidean distance（避免过密重复点）
+
     min_d2 = float(cfg.min_distance_px) ** 2
     keep_xy = []
     for (x, y) in centers_xy:
@@ -153,4 +142,3 @@ def detect_atoms_from_image(
 
 
 __all__ = ["AtomDetectConfig", "detect_atoms_from_image"]
-

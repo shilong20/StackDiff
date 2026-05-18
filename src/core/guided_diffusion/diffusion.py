@@ -1,7 +1,7 @@
 """
-【作用概述】封装扩散模型采样、材料分解与滑窗推理逻辑；核心输入来自 YAML 配置中的模型权重、输入图像目录与采样参数，输出为分解/采样结果图像及可选调试记录。
-【关联说明】文件/模块：src/main.py（分解入口）；configs/separate/*.yml（推理配置）；src/core/guided_diffusion/script_util.py（模型构建）；src/core/functions/svd_operators.py（DDNM/SVD 相关算子）。
-【命令行用法】本文件不直接作为脚本运行；请通过 `python src/main.py --config configs/separate/ReS2.yml` 间接调用。
+Purpose: Implement diffusion sampling, layer-separation operators, sliding-window inference, and output writing for StackDiff. Inputs come from the YAML runtime config and outputs are saved layer images plus optional debug artifacts.
+Related files: src/main.py, configs/separate/ReS2.yml, src/core/guided_diffusion/script_util.py, and src/core/functions/svd_operators.py.
+CLI usage: This module is imported by src/main.py and is not intended to be executed directly.
 """
 
 import os
@@ -89,7 +89,7 @@ def gray2color(x):
     x = x[:,0,:,:]
     coef=1/3
     base = coef**2 + coef**2 + coef**2
-    return torch.stack((x*coef/base, x*coef/base, x*coef/base), 1)    
+    return torch.stack((x*coef/base, x*coef/base, x*coef/base), 1)
 
 def separate2single(x,N,method='sum'):
     # Only sum method is supported
@@ -105,39 +105,29 @@ def single2separate(x,N,method='sum'):
     return result
 
 def adaptive_separate2single(x, N, y_input_patch):
-    """
-    自适应叠加函数：I_sup = k * (I_1 + I_2 + ... + I_n)
-    其中 k* = <y, ΣL_i> / <ΣL_i, ΣL_i>，最终取 k = min(k*, 1)
-    """
+    """Internal helper."""
     sum_result = x.sum(dim=1, keepdim=True)
-    # 内积形式：<y, ΣL_i> / <ΣL_i, ΣL_i>
+
     numerator = (y_input_patch * sum_result).sum()
     denominator = (sum_result * sum_result).sum()
     denominator = torch.clamp(denominator, min=1e-8)
     k_star = numerator / denominator
-    # 保证 k 不超过 1
+
     k = torch.clamp(k_star, max=1.0)
-    x_gray = k * sum_result  # 移除(N-1.0)偏移，因为这是直接叠加
+    x_gray = k * sum_result
     x_repeated = x_gray.repeat(1, N, 1, 1)
     return x_repeated
 
 def adaptive_single2separate(x, N, y_input_patch):
-    """
-    自适应反向分离函数
-    """
-    # 对于反向操作，我们不直接使用k，因为分离是线性的
+    """Internal helper."""
+
     x_gray = x[:,0,:,:] / N
     result = torch.stack([x_gray] * N, dim=1)
     return result
 
 
 def resolve_superposition_k(sum_result: torch.Tensor, target: torch.Tensor, args):
-    """
-    根据配置确定叠加系数 k：
-    - 若指定 fixed_superposition_k，则全程使用该常数（会截断到 [0,1] 区间）
-    - 否则在开启 adaptive_superposition 时按内积自适应求解
-    - 默认返回 1.0（保持向后兼容）
-    """
+    """Internal helper."""
     fixed_k = getattr(args, "fixed_superposition_k", None)
     adaptive_enabled = getattr(args, "adaptive_superposition", False)
 
@@ -155,7 +145,7 @@ def resolve_superposition_k(sum_result: torch.Tensor, target: torch.Tensor, args
         k_tensor = sum_result.new_tensor(1.0)
         mode = "unity"
 
-    # 避免数值为负或过小
+
     k_tensor = torch.clamp(k_tensor, min=0.0, max=1.0)
     k_safe = torch.clamp(k_tensor, min=1e-8)
     return k_tensor, k_safe, mode
@@ -181,7 +171,7 @@ def get_beta_schedule(beta_schedule, *, beta_start, beta_end, num_diffusion_time
         )
     elif beta_schedule == "const":
         betas = beta_end * np.ones(num_diffusion_timesteps, dtype=np.float64)
-    elif beta_schedule == "jsd":  
+    elif beta_schedule == "jsd":
         betas = 1.0 / np.linspace(
             num_diffusion_timesteps, 1, num_diffusion_timesteps, dtype=np.float64
         )
@@ -245,7 +235,7 @@ class Diffusion(object):
                 raise ValueError
             if name != 'celeba_hq':
                 ckpt = get_ckpt_path(f"ema_{name}", prefix=self.args.exp)
-                # print("Loading checkpoint {}".format(ckpt))  # 禁用日志输出
+
             elif name == 'celeba_hq':
                 ckpt = os.path.join(self.args.exp, "logs/celeba/celeba_hq.ckpt")
                 if not os.path.exists(ckpt):
@@ -259,7 +249,7 @@ class Diffusion(object):
 
         elif self.config.model.type == 'STEM_clean':
             config_dict = vars(self.config.model)
-            model = create_model(**config_dict) # 返回一个unet
+            model = create_model(**config_dict)
             if self.config.model.use_fp16:
                 model.convert_to_fp16()
             # ckpt = os.path.join(self.args.exp, "logs/mdsave/ema_0.9999_380000.pt")
@@ -268,9 +258,9 @@ class Diffusion(object):
             model.to(self.device)
             model.eval()
             model = torch.nn.DataParallel(model)
-        
+
         elif self.config.model.type == 'STEM_separate':
-            # 提取create_model需要的参数，移除不需要的参数
+
             base_model_args = {
                 'image_size': self.config.model.image_size,
                 'num_channels': self.config.model.num_channels,
@@ -311,12 +301,12 @@ class Diffusion(object):
             for ck in ckpt_list:
                 self.model_list.append(load_one_model(ck))
 
-            # 兼容旧逻辑传入的model参数，取首个作为代表
+
             model = self.model_list[0]
 
         elif self.config.model.type == 'STEM_separate_mixed':
-            # 混合材料的处理，与STEM_separate相同的逻辑
-            # 提取create_model需要的参数，移除不需要的参数
+
+
             base_model_args = {
                 'image_size': self.config.model.image_size,
                 'num_channels': self.config.model.num_channels,
@@ -357,9 +347,9 @@ class Diffusion(object):
             for ck in ckpt_list:
                 self.model_list.append(load_one_model(ck))
 
-            # 兼容旧逻辑传入的model参数，取首个作为代表
+
             model = self.model_list[0]
-        
+
         else:
             raise ValueError(f"Unsupported model type: {self.config.model.type}")
 
@@ -369,7 +359,7 @@ class Diffusion(object):
             #       f'travel_length = {self.config.time_travel.travel_length},',
             #       f'travel_repeat = {self.config.time_travel.travel_repeat}.',
             #       f'Task: {self.args.deg}.'
-            #      )  # 禁用日志输出
+
             self.simplified_ddnm_plus(model, cls_fn)
         else:
             # print('Run SVD-based DDNM.',
@@ -377,10 +367,10 @@ class Diffusion(object):
             #       f'travel_length = {self.config.time_travel.travel_length},',
             #       f'travel_repeat = {self.config.time_travel.travel_repeat}.',
             #       f'Task: {self.args.deg}.'
-            #      )  # 禁用日志输出
+
             self.svd_based_ddnm_plus(model, cls_fn)
-            
-            
+
+
     def simplified_ddnm_plus(self, model, cls_fn):
         args, config = self.args, self.config
 
@@ -395,8 +385,8 @@ class Diffusion(object):
             args.subset_start = 0
             args.subset_end = len(test_dataset)
 
-        # print(f'Dataset has size {len(test_dataset)}')  # 禁用日志输出
-        # print(f'Dataset has size {len(test_dataset)}');  // 禁用日志输出
+
+
 
         def seed_worker(worker_id):
             worker_seed = args.seed % 2 ** 32
@@ -405,7 +395,7 @@ class Diffusion(object):
 
         g = torch.Generator()
         g.manual_seed(args.seed)
-        # 受限环境下禁用多进程加载，避免 IPC 权限问题
+
         val_loader = data.DataLoader(
             test_dataset,
             batch_size=config.sampling.batch_size,
@@ -416,22 +406,22 @@ class Diffusion(object):
         )
 
         # get degradation operator
-        # print("args.deg:",args.deg)  # 禁用日志输出
+
         if args.deg =='colorization':
             A = lambda z: color2gray(z)
             Ap = lambda z: gray2color(z)
         elif args.deg =='separate_sum':
             A = lambda z: separate2single(z,args.N,method='sum')
             Ap = lambda z: single2separate(z,args.N,method='sum')
-        
+
         elif args.deg =='denoising':
             A = lambda z: z
             Ap = A
 
         args.sigma_y = 2 * args.sigma_y #to account for scaling to [-1,1]
         sigma_y = args.sigma_y
-        
-        # print(f'Start from {args.subset_start}')  # 禁用日志输出
+
+
         idx_init = args.subset_start
         idx_so_far = args.subset_start
         avg_psnr = 0.0
@@ -447,7 +437,7 @@ class Diffusion(object):
             image_folder = os.path.join(output_root, identifier_base)
             os.makedirs(image_folder, exist_ok=True)
 
-            # 断点重续：检查所有输出文件是否已存在
+
             all_outputs_exist = True
             expected_outputs = [
                 os.path.join(image_folder, f"{identifier_base}_original.png")
@@ -456,12 +446,12 @@ class Diffusion(object):
                 expected_outputs.append(os.path.join(image_folder, f"{identifier_base}_{i}.png"))
             if args.deg == 'separate_sum':
                 expected_outputs.append(os.path.join(image_folder, f"{identifier_base}_conbine.png"))
-            
+
             for output_file in expected_outputs:
                 if not os.path.exists(output_file):
                     all_outputs_exist = False
                     break
-            
+
             if all_outputs_exist:
                 pbar.set_description(f"Skipping (already processed): {identifier_base}")
                 continue
@@ -506,13 +496,13 @@ class Diffusion(object):
                 n = x.size(0)
                 x0_preds = []
                 xs = [x]
-                
-                times = get_schedule_jump(config.time_travel.T_sampling, 
-                                               config.time_travel.travel_length, 
+
+                times = get_schedule_jump(config.time_travel.T_sampling,
+                                               config.time_travel.travel_length,
                                                config.time_travel.travel_repeat,
                                               )
                 time_pairs = list(zip(times[:-1], times[1:]))
-                  
+
                 # prepare for shift
                 H_target = x.size(2)
                 W_target = x.size(3)
@@ -534,7 +524,7 @@ class Diffusion(object):
 
                 with tqdm.tqdm(total=total_shifts) as pbar:
                     pbar.set_description('total shifts')
-    
+
                     # shift along H
                     for shift_h in range(shift_h_total):
                         h_l = min(stride_px * shift_h, max_h_start)
@@ -545,10 +535,10 @@ class Diffusion(object):
                             x_temp=finalresult
                             w_l = min(stride_px * shift_w, max_w_start)
                             w_r = w_l + tile_px
-                            
-                            # 范围已确定
 
-                            # 调整数据大小以适应原模型
+
+
+
                             x0_preds = []
                             x0_t_hats = []
                             xs = [x[:, :, h_l:h_r, w_l:w_r]]
@@ -557,9 +547,9 @@ class Diffusion(object):
                             # reverse diffusion sampling
                             for i, j in tqdm.tqdm(time_pairs):
                                 i, j = i*skip, j*skip
-                                if j<0: j=-1 
+                                if j<0: j=-1
 
-                                if j < i: # normal sampling 
+                                if j < i: # normal sampling
                                     t = (torch.ones(n) * i).to(x.device)
                                     # print(f't: {t}')
                                     next_t = (torch.ones(n) * j).to(x.device)
@@ -567,7 +557,7 @@ class Diffusion(object):
                                     at_next = compute_alpha(self.betas, next_t.long())
                                     sigma_t = (1 - at_next**2).sqrt()
 
-                                    # 每个通道单独计算
+
                                     et_list = []
                                     for no in range(args.N):
                                         xt = xs[-1][:,no,:,:].unsqueeze(1).to('cuda')
@@ -578,7 +568,7 @@ class Diffusion(object):
                                         #     xt_img, os.path.join(self.args.image_folder, f"{filename}_{no}_{int(t)}.png")
                                         # )
 
-                                        # 若提供了多模型权重，则按层选择对应模型；否则使用单一模型
+
                                         model_to_use = model
                                         if hasattr(self, 'model_list') and len(self.model_list) > 1:
                                             idx = min(no, len(self.model_list)-1)
@@ -619,7 +609,7 @@ class Diffusion(object):
 
                                     # Eq. 17
                                     if self.args.deg == 'separate_sum':
-                                        # 在 [0,1] 域上定义 A/Ap，形式保持一致
+
                                         L = (x0_t + 1.0) / 2.0
                                         y_pos = (y_patch + 1.0) / 2.0
                                         sum_result = L.sum(dim=1, keepdim=True)
@@ -651,11 +641,11 @@ class Diffusion(object):
                                                 "k_mode": k_mode,
                                             })
 
-                                            # 使用当前的 k 对 xt 做自适应叠加，并在 debug 目录下额外保存一张 xt 叠加图
+
                                             if debug_x0_dir is not None and xt_debug is not None:
-                                                xt_layers = xt_debug  # [B, N, H, W]，每个通道对应一层 xt
+                                                xt_layers = xt_debug
                                                 xt_sum = xt_layers.sum(dim=1, keepdim=True)
-                                                # 保证 k 与 xt 在同一 device 上
+
                                                 k_for_xt = k_tensor.to(xt_sum.device)
                                                 xt_combine = torch.clamp(k_for_xt * xt_sum, 0.0, 1.0)
                                                 xt_combine = xt_combine[0]  # [C, H, W]
@@ -669,7 +659,7 @@ class Diffusion(object):
                                     else:
                                         x0_t_hat = x0_t - lambda_t*Ap(A(x0_t) - y_patch)
                                     x0_t_hats.append(x0_t_hat.to('cpu'))
-                                    # mask-shift trick 
+                                    # mask-shift trick
                                     if overlap_px > 0:
                                         if shift_w == 0 and shift_h != 0:
                                             neo_h_l = h_l
@@ -697,8 +687,8 @@ class Diffusion(object):
                                     xt_next = at_next.sqrt() * x0_t_hat + gamma_t * (c1 * torch.randn_like(x0_t) + c2 * et)
 
                                     x0_preds.append(x0_t.to('cpu'))
-                                   
-                                    xs.append(xt_next.to('cpu'))    
+
+                                    xs.append(xt_next.to('cpu'))
 
                                 else: # time-travel back
                                     next_t = (torch.ones(n) * j).to(x.device)
@@ -758,19 +748,19 @@ class Diffusion(object):
                     plt.close(fig)
                 except Exception as exc:
                     logging.warning(f"residual debug plot failed: {exc}")
-            
-            # 保存原图到输出文件夹
+
+
             original_y = inverse_data_transform(config, y)
             tvu.save_image(
                 original_y[0], os.path.join(image_folder, f"{identifier_base}_original.png")
             )
-            
-            # 保存分解后的层图像
+
+
             for i in range (args.N):
                 tvu.save_image(
                 x[0][0][i], os.path.join(image_folder, f"{identifier_base}_{i}.png")
                 )
-        
+
                 # tvu.save_image(
                 # x0_preds[0][0][i], os.path.join(self.args.image_folder, f"{identifier_base}_{i}_x0_preds.png")
                 # )
@@ -796,7 +786,7 @@ class Diffusion(object):
         args, config = self.args, self.config
 
         dataset, test_dataset = get_dataset(args, config)
-         
+
         # dataset = SortedImageFolder(
         #     os.path.join(args.exp, "datasets", "stem"),
         #     transform=transforms.Compose([
@@ -804,7 +794,7 @@ class Diffusion(object):
         #         transforms.Grayscale(num_output_channels=1),
         #         transforms.ToTensor()
         #     ]),
-        # sort=False)  
+        # sort=False)
 
         device_count = torch.cuda.device_count()
 
@@ -815,7 +805,7 @@ class Diffusion(object):
             args.subset_start = 0
             args.subset_end = len(dataset)
 
-        # print(f'Dataset has size {len(dataset)}')  # 禁用日志输出
+
 
 
         def seed_worker(worker_id):
@@ -825,7 +815,7 @@ class Diffusion(object):
 
         g = torch.Generator()
         g.manual_seed(args.seed)
- 
+
         val_loader = data.DataLoader(
             dataset,
             batch_size=config.sampling.batch_size,
@@ -882,7 +872,7 @@ class Diffusion(object):
                 k[i] = bicubic_kernel(x)
             k = k / np.sum(k)
             kernel = torch.from_numpy(k).float().to(self.device)
-            A_funcs = SRConv(kernel / kernel.sum(), \
+            A_funcs = SRConv(kernel / kernel.sum(),\
                              config.data.channels, self.config.data.image_size, self.device, stride=factor)
         elif deg == 'deblur_uni':
             from functions.svd_operators import Deblurring
@@ -911,8 +901,8 @@ class Diffusion(object):
             raise ValueError("degradation type not supported")
         args.sigma_y = 2 * args.sigma_y #to account for scaling to [-1,1]
         sigma_y = args.sigma_y
-        
-        # print(f'Start from {args.subset_start}')  # 禁用日志输出
+
+
         idx_init = args.subset_start
         idx_so_far = args.subset_start
         avg_psnr = 0.0
@@ -940,7 +930,7 @@ class Diffusion(object):
                 else: # noisy case, turn to ddnm+
                     # x, _ = ddnm_plus_diffusion(x, model, self.betas, self.args.eta, A_funcs, y, sigma_y, cls_fn=cls_fn, classes=classes, config=config)
                     x = ddnm_plus_diffusion(x, model, self.betas, self.args.eta, A_funcs, x_orig, sigma_y, cls_fn=cls_fn, classes=classes, config=config)
-                    
+
             x = [inverse_data_transform(config, xi) for xi in x]
 
 
@@ -956,9 +946,9 @@ class Diffusion(object):
 
             idx_so_far += batch_size
 
-        # print("Number of samples: %d" % (idx_so_far - idx_init))  # 禁用日志输出
 
-# Code form RePaint   
+
+# Code form RePaint
 def get_schedule_jump(T_sampling, travel_length, travel_repeat):
     jumps = {}
     for j in range(0, T_sampling - travel_length, travel_length):
@@ -997,7 +987,7 @@ def _check_times(times, t_0, T_sampling):
     for t in times:
         assert t >= t_0, (t, t_0)
         assert t <= T_sampling, (t, T_sampling)
-        
+
 def compute_alpha(beta, t):
     beta = torch.cat([torch.zeros(1).to(beta.device), beta], dim=0)
     a = (1 - beta).cumprod(dim=0).index_select(0, t + 1).view(-1, 1, 1, 1)

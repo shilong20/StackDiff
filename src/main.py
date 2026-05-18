@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-【作用概述】统一的材料分解主程序（基于 YAML 配置）：从输入目录读取 STEM 图像，按配置加载模型并执行分解推理，将输出写入指定目录（通常每张输入图会生成两层结果图等）。
-【关联说明】文件/模块：configs/separate/*.yml（输入/输出路径与推理/处理参数）；src/core/datasets/__init__.py（递归读取输入图像与可选排除目录）；src/core/guided_diffusion/diffusion.py（扩散采样与滑窗逻辑）；src/core/utils/image_preprocessor.py（auto-crop 的裁剪/缩放计划）。
-【命令行用法】python src/main.py --config configs/separate/ReS2.yml（参数：--config=YAML 配置路径；--verbose=日志级别）
+Purpose: Command-line entry point for StackDiff layer separation from a YAML configuration. It reads input STEM images, loads the configured ReS2 checkpoint, runs diffusion-based separation, and writes layer outputs to disk.
+Related files: configs/separate/ReS2.yml, src/core/datasets/__init__.py, src/core/guided_diffusion/diffusion.py, and src/core/utils/image_preprocessor.py.
+CLI usage: python src/main.py --config configs/separate/ReS2.yml (arguments: --config selects the YAML file; --verbose sets logging level).
 """
 
 import argparse
@@ -21,35 +21,35 @@ import numpy as np
 from pathlib import Path
 import fnmatch
 
-# 添加核心模块路径
+
 sys.path.append(os.path.join(os.path.dirname(__file__), 'core'))
 from guided_diffusion.diffusion import Diffusion
 from datasets import IMG_EXTS
 from utils.image_preprocessor import ImagePlan, build_preprocess_plan
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="材料层分解工具（YAML 配置驱动）")
-    parser.add_argument("--config", type=str, required=True, help="YAML 配置文件路径")
-    # 可选运行参数
-    parser.add_argument("--seed", type=int, default=1234, help="随机种子")
+    parser = argparse.ArgumentParser(description="StackDiff layer separation from a YAML config")
+    parser.add_argument("--config", type=str, required=True, help="Path to the YAML config file")
+
+    parser.add_argument("--seed", type=int, default=1234, help="Random seed")
     parser.add_argument("--verbose", type=str, default="info",
                         choices=['debug', 'info', 'warning', 'error'],
-                        help="日志级别")
+                        help="Logging level")
     return parser.parse_args()
 
 def load_config_from_path(config_path: str):
-    """从给定路径加载 YAML 配置"""
+    """Internal helper."""
     if not os.path.exists(config_path):
-        raise FileNotFoundError(f"配置文件不存在: {config_path}")
+        raise FileNotFoundError(f"Config file does not exist: {config_path}")
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
 def parse_materials_from_name(material_name: str):
-    """从配置名解析材料列表，例如'ReS2_MoS2' -> ['ReS2','MoS2']"""
+    """Internal helper."""
     return [seg for seg in material_name.split('_') if seg]
 
 def finalize_config(config: dict) -> dict:
-    """补全配置中的默认路径（若未显式设置 input/output 则回落到 default_*）"""
+    """Internal helper."""
     paths = config.get('paths', {})
     if 'input' not in paths:
         paths['input'] = paths.get('default_input')
@@ -59,7 +59,7 @@ def finalize_config(config: dict) -> dict:
     return config
 
 def dict2namespace(config):
-    """递归转换字典为命名空间"""
+    """Internal helper."""
     namespace = argparse.Namespace()
     for key, value in config.items():
         if isinstance(value, dict):
@@ -70,10 +70,10 @@ def dict2namespace(config):
     return namespace
 
 def setup_logging(verbose):
-    """设置日志"""
+    """Internal helper."""
     level = getattr(logging, verbose.upper(), None)
     if not isinstance(level, int):
-        raise ValueError(f"不支持的日志级别: {verbose}")
+        raise ValueError('Invalid StackDiff configuration or runtime parameter.')
 
     logger = logging.getLogger()
     logger.handlers.clear()
@@ -81,22 +81,17 @@ def setup_logging(verbose):
     handler = logging.StreamHandler()
     formatter = logging.Formatter("%(message)s")
     handler.setFormatter(formatter)
-    
+
     logger.addHandler(handler)
     logger.setLevel(level)
-    
+
     return logger
 
 SIZE_PATTERN = re.compile(r"-\s*([0-9]+(?:\.[0-9]+)?)\s*[xX×]\s*([0-9]+(?:\.[0-9]+)?)")
 GRID_UNIT_TOLERANCE = 1e-3
 
 def parse_image_size_from_filename(filename: str) -> Optional[Tuple[float, float]]:
-    """
-    从文件名末尾解析图像的物理尺寸（单位 nm）。
-
-    约定格式：形如 "...-<width>x<height>.png"（大小写不敏感，支持分隔符 '-',' '）。
-    返回 (width_nm, height_nm)。若解析失败返回 None。
-    """
+    """Internal helper."""
     match = SIZE_PATTERN.search(os.path.basename(filename))
     if not match:
         return None
@@ -110,7 +105,7 @@ def parse_image_size_from_filename(filename: str) -> Optional[Tuple[float, float
         return None
 
 def _grid_candidate_score(loss_area: float, unit_nm: float, row: int, col: int, unit_range: Tuple[float, float]) -> Tuple[float, float, float]:
-    """用于排序的得分 (loss, unit偏差, 行列差)，越小越优。"""
+    """Internal helper."""
     mid_unit = (unit_range[0] + unit_range[1]) * 0.5
     return (
         loss_area,
@@ -124,12 +119,7 @@ def calculate_optimal_grid(
     unit_range: Tuple[float, float] = (2.4, 4.8),
     tol: float = GRID_UNIT_TOLERANCE,
 ) -> Optional[Dict[str, float]]:
-    """
-    计算使裁剪面积最小的行列划分方案。
-
-    返回包含 row, col, unit_nm, crop_height_nm, crop_width_nm, loss_nm2。
-    若无法找到满足约束的方案，则返回 None。
-    """
+    """Internal helper."""
     min_unit, max_unit = unit_range
     if height_nm <= 0 or width_nm <= 0 or min_unit <= 0 or max_unit <= 0:
         return None
@@ -191,7 +181,7 @@ def calculate_optimal_grid(
         return best_valid
 
     if fallback:
-        # 将 unit 调整到允许范围内，同时保证不超出原图尺寸
+
         clipped_unit = min(max(fallback["unit_nm"], min_unit), max_unit)
         clipped_unit = min(clipped_unit, height_nm / fallback["row"], width_nm / fallback["col"])
         clipped_unit = max(clipped_unit, 0.0)
@@ -218,10 +208,7 @@ def align_physical_with_pixels(
     width_px: int,
     height_px: int,
 ) -> Tuple[float, float, bool]:
-    """
-    根据像素宽高比推断物理尺寸的方向。
-    返回 (height_nm_aligned, width_nm_aligned, swapped)。
-    """
+    """Internal helper."""
     if width_px <= 0 or height_px <= 0 or width_nm <= 0 or height_nm <= 0:
         return height_nm, width_nm, False
 
@@ -239,57 +226,52 @@ def align_physical_with_pixels(
     return width_nm, height_nm, True
 
 def prepare_output_dir(output_path):
-    """准备输出目录 - 创建但不清空，允许增量更新"""
-    # 直接使用输出路径，不需要image_samples中间路径
+    """Internal helper."""
+
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
-    # 注释：不再清空整个目录，允许保留其他图片的分解结果
-    # 分解过程会自动覆盖同名文件
-    
+
+
+
     return output_path
 
 def prepare_input_dir(input_path):
-    """准备输入目录 - 确保符合ImageFolder格式"""
+    """Internal helper."""
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f"输入路径不存在: {input_path}")
-    
-    # 如果输入是单个文件
+        raise FileNotFoundError(f"Input path does not exist: {input_path}")
+
+
     if os.path.isfile(input_path):
-        # 创建临时目录结构
+
         file_dir = os.path.dirname(input_path)
         temp_input_dir = os.path.join(file_dir, "temp_input")
         class_dir = temp_input_dir
-        
-        # 创建目录
+
+
         os.makedirs(class_dir, exist_ok=True)
-        
-        # 复制文件到临时目录
+
+
         filename = os.path.basename(input_path)
         dst = os.path.join(class_dir, filename)
         shutil.copy2(input_path, dst)
-        
-        print(f"单个文件输入，已创建临时目录: {temp_input_dir}")
+
+        print(f"Single-file input; created temporary directory: {temp_input_dir}")
         return temp_input_dir
-    
-    # 如果输入是目录
+
+
     if os.path.isdir(input_path):
-        # 直接使用当前目录中的所有图像文件（不再强制 images/ 子目录）
+
         return input_path
-    
-    raise ValueError(f"输入路径既不是文件也不是目录: {input_path}")
+
+    raise ValueError(f"Input path is neither a file nor a directory: {input_path}")
 
 def list_input_images(root: str) -> Dict[str, str]:
-    """
-    列出输入目录下的所有图像，返回 {basename: full_path} 映射。
-    当存在重名文件时，保留首次出现并忽略其余同名文件。
-    """
+    """Internal helper."""
     return list_input_images_excluding(root, exclude_dir_patterns=None)
 
 
 def list_input_images_excluding(root: str, *, exclude_dir_patterns: Optional[list[str]]) -> Dict[str, str]:
-    """
-    与 list_input_images 类似，但支持排除特定子目录名（pattern 使用 fnmatch 规则）。
-    """
+    """Internal helper."""
     image_map: Dict[str, str] = {}
     exclude_dir_patterns = list(exclude_dir_patterns or [])
     for current_root, dirs, files in os.walk(root):
@@ -309,13 +291,7 @@ def list_input_images_excluding(root: str, *, exclude_dir_patterns: Optional[lis
 
 
 def _derive_input_excludes(input_path: str, output_path: str, *, config_excludes: Optional[list[str]]) -> list[str]:
-    """
-    推理阶段输入目录递归读取时，默认排除常见输出目录，避免“输出写到输入目录下导致被再次当作输入”。
-    规则：
-    - 默认排除：result、result_*、step_*（与历史目录结构兼容；尤其用于排除 result_stepXX 这类输出目录）
-    - 若 output_path 位于 input_path 之下：额外排除 output 的第一级目录名（例如 input/step_50 -> 排除 step_50）
-    - 用户可在 YAML 的 processing.input_exclude_dirs 中覆盖/补充
-    """
+    """Internal helper."""
     excludes = list(config_excludes) if config_excludes is not None else ["result", "result_*", "step_*"]
     try:
         in_root = Path(input_path).resolve()
@@ -327,7 +303,7 @@ def _derive_input_excludes(input_path: str, output_path: str, *, config_excludes
                 excludes.append(top)
     except Exception:
         pass
-    # 去重，保持顺序
+
     seen = set()
     dedup = []
     for x in excludes:
@@ -338,19 +314,19 @@ def _derive_input_excludes(input_path: str, output_path: str, *, config_excludes
     return dedup
 
 def main():
-    # 解析命令行参数
+
     args = parse_args()
-    
-    # 设置日志
+
+
     logger = setup_logging(args.verbose)
-    
+
     try:
-        # 加载配置文件
-        logger.info(f"加载配置: {args.config}")
+
+        logger.info('Invalid StackDiff configuration or runtime parameter.')
         config = load_config_from_path(args.config)
         config = finalize_config(config)
 
-        # 配置中可指定运行使用的 GPU（与 nvidia-smi 序号一致，-1 表示默认）
+
         runtime_cfg = config.get('runtime', {}) or {}
         gpu_value = runtime_cfg.get('gpu', runtime_cfg.get('device', -1))
         try:
@@ -361,25 +337,25 @@ def main():
             os.environ["CUDA_DEVICE_ORDER"] = os.environ.get("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
             os.environ["CUDA_VISIBLE_DEVICES"] = str(selected_gpu)
             logger.info(
-                f"根据配置锁定 GPU: {selected_gpu}（CUDA_DEVICE_ORDER=PCI_BUS_ID，进程内可见为 cuda:0）"
+                'Invalid StackDiff configuration or runtime parameter.'
             )
-        
-        # 转换为命名空间
+
+
         config_ns = dict2namespace(config)
-        
-        # 准备输入输出目录
+
+
         input_path = prepare_input_dir(config['paths']['input'])
         image_folder = prepare_output_dir(config['paths']['output'])
-        
-        # 构造参数对象（支持每层不同模型时按materials顺序映射）
-        # 读取每张图片的 row/col 覆盖设置（可选）
+
+
+
         proc_cfg = config.get('processing', {})
         input_excludes_cfg = proc_cfg.get("input_exclude_dirs", None)
         if input_excludes_cfg is not None and not isinstance(input_excludes_cfg, (list, tuple)):
             input_excludes_cfg = None
         input_exclude_dirs = _derive_input_excludes(input_path, image_folder, config_excludes=list(input_excludes_cfg) if input_excludes_cfg else None)
 
-        # 获取选择的文件列表（如果指定）
+
         selected_files = proc_cfg.get('selected_files')
         if not selected_files:
             selected_files = config.get('selected_files')
@@ -401,7 +377,7 @@ def main():
                     candidates.add(base_stem)
                 selected_lookup.update(c for c in candidates if c)
         if selected_files:
-            logger.info(f"指定处理文件: {selected_files}")
+            logger.info(f"Selected files: {selected_files}")
 
         default_row = proc_cfg.get('row', 1) or 1
         default_col = proc_cfg.get('col', 1) or 1
@@ -438,7 +414,7 @@ def main():
         if auto_crop_enabled:
             image_files = list_input_images_excluding(input_path, exclude_dir_patterns=input_exclude_dirs)
             if not image_files:
-                logger.warning("自动裁剪启用，但输入目录未找到任何图片")
+                logger.warning('Invalid StackDiff configuration or runtime parameter.')
             for rel_path, file_path in image_files.items():
                 rel_no_ext = os.path.splitext(rel_path)[0]
                 base_name = os.path.basename(rel_path)
@@ -448,14 +424,14 @@ def main():
                         continue
                 size_tuple = parse_image_size_from_filename(base_name)
                 if not size_tuple:
-                    logger.warning(f"文件名未包含尺寸信息，跳过自动裁剪: {rel_path}")
+                    logger.warning(f"Filename has no physical-size tag; skipping auto-crop: {rel_path}")
                     continue
                 width_nm_raw, height_nm_raw = size_tuple
                 try:
                     with Image.open(file_path) as img:
                         width_px, height_px = img.size
                 except Exception as exc:
-                    logger.warning(f"读取图片尺寸失败，跳过 {rel_path}: {exc}")
+                    logger.warning(f"Failed to read image size; skipping {rel_path}: {exc}")
                     continue
 
                 height_nm_aligned, width_nm_aligned, swapped = align_physical_with_pixels(
@@ -471,7 +447,7 @@ def main():
                     unit_range=unit_range_tuple,
                 )
                 if grid_solution is None:
-                    logger.warning(f"未找到可行的行列划分，跳过自动裁剪: {rel_path}")
+                    logger.warning(f"No feasible row/column grid found; skipping auto-crop: {rel_path}")
                     continue
 
                 plan = build_preprocess_plan(
@@ -484,7 +460,7 @@ def main():
                     swapped_axes=swapped,
                 )
                 if plan is None:
-                    logger.warning(f"生成裁剪计划失败: {rel_path}")
+                    logger.warning(f"Failed to build crop plan: {rel_path}")
                     continue
 
                 image_crop_plans[rel_path] = plan
@@ -502,30 +478,30 @@ def main():
                     plan.col,
                     plan.unit_nm,
                     grid_solution.get("loss_nm2", -1.0),
-                    " [轴交换]" if swapped else "",
+                    " [axis swapped]" if swapped else "",
                 )
-            logger.info(f"自动裁剪启用：生成 {auto_plan_count} 条裁剪计划")
+            logger.info(f"Auto-crop enabled: generated {auto_plan_count} crop plans")
             logger.info(
-                "自动裁剪参数：unit范围[%.2f, %.2f] nm，tile=%d px",
+                "Auto-crop settings: unit range[%.2f, %.2f] nm，tile=%d px",
                 unit_min,
                 unit_max,
                 tile_size_px,
             )
             if auto_plan_records:
-                logger.info("自动裁剪明细：")
+                logger.info("Auto-crop details:")
                 for rel_name, plan, swapped, adjusted in sorted(auto_plan_records, key=lambda x: x[0]):
                     suffix = []
                     if swapped:
-                        suffix.append("轴交换")
+                        suffix.append("axis swapped")
                     if adjusted:
-                        suffix.append("单元调整")
+                        suffix.append("unit adjusted")
                     suffix_str = f" ({', '.join(suffix)})" if suffix else ""
                     stride_px = max(1, min(window_stride_px, tile_size_px))
                     effective_rows = max(1, math.floor(max(0, plan.target_size[1] - tile_size_px) / stride_px) + 1)
                     effective_cols = max(1, math.floor(max(0, plan.target_size[0] - tile_size_px) / stride_px) + 1)
                     stride_label = f"stride={stride_ratio_effective:.2f}×tile, overlap={overlap_ratio_effective:.0%}"
                     logger.info(
-                        "  - %s -> row=%d col=%d (滑窗=%dx%d, %s) 单元=%.3f nm 裁剪损失=%.4f nm²%s",
+                        "  - %s -> row=%d col=%d (Sliding window=%dx%d, %s) unit=%.3f nm crop loss=%.4f nm²%s",
                         rel_name,
                         plan.row,
                         plan.col,
@@ -537,10 +513,10 @@ def main():
                         suffix_str,
                     )
             elif not image_files:
-                logger.info("自动裁剪未生成任何计划，将回退到默认 row/col 设置")
+                logger.info("Auto-crop produced no plans; falling back to the default row/col settings")
 
         run_args = argparse.Namespace(
-            config=None,  # 不使用配置文件路径
+            config=None,
             seed=args.seed,
             exp=config['paths']['output'],
             deg=config['separation']['method'],
@@ -548,12 +524,12 @@ def main():
             sigma_y=config['separation']['sigma_y'],
             row=default_row,
             col=default_col,
-            selected_files=selected_files,  # 添加selected_files支持
+            selected_files=selected_files,
             N=config['separation']['num_layers'],
             eta=config['separation']['eta'],
             simplified=config['separation']['simplified'],
-            adaptive_superposition=config['separation'].get('adaptive_superposition', False),  # 新增
-            fixed_superposition_k=config['separation'].get('fixed_superposition_k', None),  # 固定k模式
+            adaptive_superposition=config['separation'].get('adaptive_superposition', False),
+            fixed_superposition_k=config['separation'].get('fixed_superposition_k', None),
             residual_debug=config['separation'].get('residual_debug', False),
             image_folder=image_folder,
             deg_scale=4.0,
@@ -570,10 +546,10 @@ def main():
             window_stride_px=window_stride_px,
             input_exclude_dirs=input_exclude_dirs,
         )
-        
-        # 根据材料类型自动推断模型参数
+
+
         def get_model_config(material):
-            """根据材料类型返回对应的模型配置"""
+            """Internal helper."""
             base_config = {
                 'image_size': 128,
                 'in_channels': 1,
@@ -594,34 +570,34 @@ def main():
                 'class_cond': False,
                 'use_new_attention_order': False
             }
-            
-            # 根据材料类型设置模型类型
-            if material in ['ReS2', 'MoS2', 'TaS2']:
+
+
+            if material in ['ReS2']:
                 base_config['type'] = 'STEM_separate'
-            elif material == 'Mixed':  # 混合材料
+            elif material == 'Mixed':
                 base_config['type'] = 'STEM_separate_mixed'
-            
+
             return base_config
-        
-        # 根据配置名解析材料集合
+
+
         materials = parse_materials_from_name(config.get('material', 'ReS2'))
-        # 过滤掉非材料的标识符（如sim, high-quality等）
-        material_keywords = {'ReS2', 'MoS2', 'TaS2'}
+
+        material_keywords = {'ReS2'}
         actual_materials = [m for m in materials if m in material_keywords]
-        
-        # 当前模型架构仍保持一致，采用STEM_separate
-        # 后续可扩展按材料切换不同unet结构
+
+
+
         if len(actual_materials) == 0:
-            # 如果没有识别出材料，默认使用ReS2
+
             primary_material = 'ReS2'
         elif len(actual_materials) == 1:
             primary_material = actual_materials[0]
         else:
             primary_material = 'Mixed'
-        
+
         model_config = get_model_config(primary_material)
         config_ns.model = argparse.Namespace(**model_config)
-        
+
         config_ns.data = argparse.Namespace(
             dataset='STEM',
             image_size=128,
@@ -635,14 +611,14 @@ def main():
             subset_1k=True,
             out_of_dist=False
         )
-        
+
         config_ns.diffusion = argparse.Namespace(
             beta_schedule='linear',
             beta_start=0.0001,
             beta_end=0.02,
             num_diffusion_timesteps=1000
         )
-        
+
         # Time-travel back (RePaint-style) controls
         st_cfg = config.get('sampling', {}) or {}
         tt_cfg = (st_cfg.get('time_travel') or {}) if isinstance(st_cfg.get('time_travel'), dict) else {}
@@ -655,15 +631,15 @@ def main():
             travel_repeat=tt_repeat
         )
         if tt_enable:
-            time_travel_msg = f"time-travel back 开启（length={tt_length}, repeat={tt_repeat})"
+            time_travel_msg = f"time-travel back enabled（length={tt_length}, repeat={tt_repeat})"
         else:
-            time_travel_msg = "time-travel back 关闭"
-            
+            time_travel_msg = "time-travel back disabled"
+
         config_ns.sampling = argparse.Namespace(
             batch_size=config['sampling']['batch_size']
         )
-        
-        # 设置设备
+
+
         device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         device_desc = str(device)
         if torch.cuda.is_available():
@@ -676,55 +652,55 @@ def main():
         else:
             device_desc = str(device)
         config_ns.device = device
-        
-        # 设置随机种子
+
+
         torch.manual_seed(args.seed)
         np.random.seed(args.seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(args.seed)
         torch.backends.cudnn.benchmark = True
-        
-        # 显示配置信息
+
+
         fixed_k = config['separation'].get('fixed_superposition_k', None)
         adaptive_superposition = config['separation'].get('adaptive_superposition', False)
         if fixed_k is not None:
-            k_summary = f"固定 k = {fixed_k}（覆盖自适应）"
+            k_summary = f"fixed k = {fixed_k}（overrides adaptive mode）"
         elif adaptive_superposition:
-            k_summary = "自适应 k"
+            k_summary = "adaptive k"
         else:
-            k_summary = "固定 k = 1（未开启自适应）"
+            k_summary = 'Invalid StackDiff configuration or runtime parameter.'
         summary_lines = [
-            "运行概要：",
-            f"  材料: {config.get('material')} ({', '.join(materials)})",
-            f"  描述: {config.get('description','')}",
-            f"  输入: {input_path}",
-            f"  输出: {config['paths']['output']}",
-            f"  分层数: {config['separation']['num_layers']}",
-            f"  采样步数: {config['sampling']['T_sampling']} | eta={config['separation']['eta']}",
+            "Run summary:",
+            f"  Material: {config.get('material')} ({', '.join(materials)})",
+            f"  Description: {config.get('description','')}",
+            f"  Input: {input_path}",
+            f"  Output: {config['paths']['output']}",
+            f"  Number of layers: {config['separation']['num_layers']}",
+            f"  Sampling steps: {config['sampling']['T_sampling']} | eta={config['separation']['eta']}",
             f"  GPU: {device_desc}",
-            f"  滑窗: {'开启' if sliding_window_effective else '关闭'} (stride={stride_ratio_effective:.2f}×tile, overlap={overlap_ratio_effective:.0%})",
+            f"  Sliding window: {'enabled' if sliding_window_effective else 'disabled'} (stride={stride_ratio_effective:.2f}×tile, overlap={overlap_ratio_effective:.0%})",
             f"  {time_travel_msg}",
-            f"  图像尺寸策略: {'自动计算' if auto_crop_enabled else f'{default_row}x{default_col}'}",
-            f"  噪声σ_y: {config['separation']['sigma_y']}",
-            f"  叠加模式: {k_summary}",
+            f"  Image-size strategy: {'auto' if auto_crop_enabled else f'{default_row}x{default_col}'}",
+            f"  Noise sigma_y: {config['separation']['sigma_y']}",
+            f"  Superposition mode: {k_summary}",
         ]
         for line in summary_lines:
             logger.info(line)
-        
-        # 如果是多材料，允许在配置中提供多权重列表
-        if 'model_checkpoints' in config.get('paths', {}):
-            # 记录但当前采样器使用首个权重，后续可在采样循环中逐层切换
-            logger.info(f"检测到多模型权重: {len(config['paths']['model_checkpoints'])} 个")
 
-        # 运行分解
-        logger.info("开始材料层分解...")
+
+        if 'model_checkpoints' in config.get('paths', {}):
+
+            logger.info(f"Detected multiple model checkpoints: {len(config['paths']['model_checkpoints'])} ")
+
+
+        logger.info('Invalid StackDiff configuration or runtime parameter.')
         runner = Diffusion(run_args, config_ns)
         runner.sample(config['separation']['simplified'])
-        
-        logger.info(f"分解完成！结果保存在: {image_folder}")
-        
+
+        logger.info(f"Layer separation complete. Results saved to: {image_folder}")
+
     except Exception as e:
-        logger.error(f"运行出错: {e}")
+        logger.error(f"Runtime error: {e}")
         logger.error(traceback.format_exc())
         sys.exit(1)
 

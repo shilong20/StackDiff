@@ -1,34 +1,8 @@
 #!/usr/bin/env python3
 """
-【作用概述】
-对一个“包含多个双层分解子文件夹”的根目录做批处理：对每个子文件夹（一个双层样本）
-读取其中的两张单层图（通常 *_0.png 与 *_1.png），运行单层 pipeline 得到每层的原点与 (da,db)，
-并按规则输出双层类别（slip/twist/flip_slip/flip_twist/unknown）与必要的附加结果。
-
-核心输入/输出：
-- 输入：`--root <dir>`，其下每个一级子目录视为一个双层样本文件夹（里面一般有 4 张图，*_0.png/*_1.png 为单层图）。
-- 输出：`--out_csv <path>`，每个双层样本一行，包含：
-  - folder（样本目录）
-  - img0/img1（单层图文件名）
-  - class（slip/twist/flip_slip/flip_twist/unknown）
-  - origin0_512/origin1_512（两层原点坐标，512 坐标系）
-  - da0_512/db0_512、da1_512/db1_512（两层 dadb 向量，512 坐标系）
-  - 若为 slip：输出 da_mean_512/db_mean_512（对齐后取均值）
-  - 若为 flip_slip：先按对称轴翻转 layer0 的 dadb 后再与 layer1 对齐取均值，输出 da_mean_512/db_mean_512
-  - 其余类别不输出均值向量（留空）
-
-可选输出（默认开启）：
-- `--atoms_out_dir`：为每张单层图写出原子点云 json（避免后续人工排查时重新提点；坐标系与 dadb 输出一致，默认 512）；
-  同时写出 `atoms_index.json` 记录每个 json 对应的原图路径与点数。
-
-【关联说明】文件/模块：
-- tools/pred_dadb/atoms.py（原子检测；本脚本默认同时落盘 atoms.json）
-- tools/pred_dadb/pipeline_single.py（run_pipeline_one_image_dadb：单图输出 origin/da/db；支持复用已提取点云）
-
-【命令行用法】
-python tools/pred_dadb/pipeline_bilayer_root.py --root data/HighT1 --out_csv tools/pred_dadb/highT1_bilayer_class.csv
-python tools/pred_dadb/pipeline_bilayer_root.py --root path/to/bilayer_root --no_atoms_out
-（参数：--slip_thresh_deg=slip 判据阈值（默认 5°）；--use_highpass/--no_highpass=强制覆盖高通开关；--atoms_out_dir=原子点云输出目录）
+Purpose: Batch-process folders of separated bilayer ReS2 images, estimate each layer origin and da/db vectors, and classify samples as slip, twist, flip_slip, flip_twist, or unknown. Outputs are CSV summaries and optional atom-point JSON files.
+Related files: tools/pred_dadb/pipeline_single.py, tools/pred_dadb/atoms.py, tools/pred_dadb/cycles.py, and tools/analyze_interlayer_res2.py.
+CLI usage: python tools/pred_dadb/pipeline_bilayer_root.py --root outputs/ReS2 --out_csv outputs/res2_bilayer.csv (arguments: --root=input folders; --out_csv=summary CSV; --atoms_out_dir=optional atom JSON directory).
 """
 
 from __future__ import annotations
@@ -79,9 +53,7 @@ def _handedness_sign(da: np.ndarray, db: np.ndarray) -> int:
 
 
 def _angle_deg_mod180(u: np.ndarray, v: np.ndarray) -> float:
-    """
-    以 180° 为模的夹角：theta = arccos(|cos|) in degrees => [0, 90]
-    """
+    """Internal helper."""
     a = np.asarray(u, dtype=np.float64).reshape(2)
     b = np.asarray(v, dtype=np.float64).reshape(2)
     na = float(np.hypot(a[0], a[1]))
@@ -95,9 +67,7 @@ def _angle_deg_mod180(u: np.ndarray, v: np.ndarray) -> float:
 
 
 def _reflect_vec_about_axis(v: np.ndarray, axis_dir: np.ndarray) -> np.ndarray:
-    """
-    反射向量 v 关于“过原点、方向为 axis_dir 的直线”（仅作用于向量）。
-    """
+    """Internal helper."""
     vv = np.asarray(v, dtype=np.float64).reshape(2)
     n = _unit(np.asarray(axis_dir, dtype=np.float64).reshape(2))
     return (2.0 * float(np.dot(vv, n)) * n - vv).astype(np.float64)
@@ -168,7 +138,7 @@ def _analyze_one_folder(
         out["reason"] = "missing__0_or__1"
         return out
 
-    # atoms（默认落盘，并复用给 pipeline）
+
     pts0, dbg0 = _detect_atoms_for_image(img0, atom_cfg)
     pts1, dbg1 = _detect_atoms_for_image(img1, atom_cfg)
     if atoms_out_dir is not None:
@@ -267,19 +237,19 @@ def _analyze_one_folder(
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--root", required=True, help="包含多个双层样本子文件夹的根目录（例如 data/HighT1）")
-    ap.add_argument("--out_csv", default="", help="输出 CSV（默认 tools/pred_dadb/bilayer_class_<stamp>.csv）")
+    ap.add_argument("--root", required=True, help="Root directory containing bilayer sample subfolders.")
+    ap.add_argument("--out_csv", default="", help="Output CSV path. If omitted, a timestamped CSV is written under tools/pred_dadb/.")
     ap.add_argument("--slip_thresh_deg", type=float, default=5.0)
-    ap.add_argument("--out_scale", type=float, default=4.0, help="输出/均值向量坐标系缩放倍数（默认 4：128->512）")
-    ap.add_argument("--limit", type=int, default=0, help="只处理前 N 个子文件夹（0 表示全量）")
+    ap.add_argument("--out_scale", type=float, default=4.0, help="Coordinate scale for outputs. The default maps 128 px coordinates to 512 px.")
+    ap.add_argument("--limit", type=int, default=0, help="Process only the first N subfolders; 0 means all.")
 
     # atoms output
-    ap.add_argument("--atoms_out_dir", default="", help="原子点云输出目录（默认与 out_csv 同级生成 <stem>_atoms/）")
-    ap.add_argument("--no_atoms_out", action="store_true", help="禁用 atoms.json 输出（默认开启）")
+    ap.add_argument("--atoms_out_dir", default="", help="Directory for atom point-cloud JSON files.")
+    ap.add_argument("--no_atoms_out", action="store_true", help="Disable atom point-cloud JSON output.")
 
     # atom detect config
-    ap.add_argument("--use_highpass", action="store_true", help="强制启用高通（实验图建议开）")
-    ap.add_argument("--no_highpass", action="store_true", help="强制禁用高通")
+    ap.add_argument("--use_highpass", action="store_true", help="Force high-pass preprocessing")
+    ap.add_argument("--no_highpass", action="store_true", help="Disable high-pass preprocessing")
     ap.add_argument("--bg_sigma", type=float, default=6.0)
     ap.add_argument("--bina_thre", type=float, default=1.8)
     ap.add_argument("--min_area", type=float, default=100.0)

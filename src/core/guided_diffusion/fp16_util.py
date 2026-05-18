@@ -201,7 +201,7 @@ class MixedPrecisionTrainer:
 
         for p in self.master_params:
             p.grad.mul_(1.0 / (2 ** self.lg_loss_scale))
-        opt.param_groups[0]['capturable'] = True  # 添加这行代码
+        opt.param_groups[0]['capturable'] = True
         opt.step()
         zero_master_grads(self.master_params)
         master_params_to_model_params(self.param_groups_and_shapes, self.master_params)

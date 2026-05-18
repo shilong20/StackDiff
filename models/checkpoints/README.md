@@ -1,10 +1,12 @@
-Model checkpoints are not tracked in Git.
+# Model Checkpoints
 
-Download the released checkpoints into this directory before running sampling
-or separation configs. The public release uses one recommended EMA checkpoint
-per material:
+Model checkpoint files are not tracked in Git.
 
-- ReS2: `models/checkpoints/ReS2/ema_0.9999_200000.pt`
-- MoS2: `models/checkpoints/MoS2/ema_0.9999_200000.pt`
-- MoTe2: `models/checkpoints/MoTe2/ema_0.9999_200000.pt`
-- TaS2: `models/checkpoints/TaS2/ema_0.9999_200000.pt`
+The public ReS2 inference configuration expects:
+
+```text
+models/checkpoints/ReS2/ema_0.9999_200000.pt
+```
+
+Place the released ReS2 EMA checkpoint at that path before running
+`python src/main.py --config configs/separate/ReS2.yml`.

@@ -1,7 +1,7 @@
 """
-【作用概述】按材料名下载公开发布的推荐 EMA 权重到 configs 使用的默认路径；当前 manifest 中的 URL/SHA256 可在权重上传到 Hugging Face Hub 或 Zenodo 后补齐。
-【关联说明】文件/模块：README.md 与 models/checkpoints/README.md（权重说明）；configs/separate/*.yml 与 configs/sample/*.yml（默认权重路径）。
-【命令行用法】python scripts/download_weights.py --material ReS2（参数：--material=材料名或 all；--force=覆盖已有文件）
+Purpose: Download the released ReS2 EMA checkpoint into the default path used by the public inference configuration. The URL and checksum can be filled after uploading the checkpoint to a public host.
+Related files: README.md, models/checkpoints/README.md, configs/separate/ReS2.yml, and scripts/check_release.py.
+CLI usage: python scripts/download_weights.py --material ReS2 (arguments: --material=ReS2 or all; --force overwrites an existing checkpoint).
 """
 
 from __future__ import annotations
@@ -19,22 +19,7 @@ WEIGHTS = {
         "path": "models/checkpoints/ReS2/ema_0.9999_200000.pt",
         "url": "",
         "sha256": "",
-    },
-    "MoS2": {
-        "path": "models/checkpoints/MoS2/ema_0.9999_200000.pt",
-        "url": "",
-        "sha256": "",
-    },
-    "MoTe2": {
-        "path": "models/checkpoints/MoTe2/ema_0.9999_200000.pt",
-        "url": "",
-        "sha256": "",
-    },
-    "TaS2": {
-        "path": "models/checkpoints/TaS2/ema_0.9999_200000.pt",
-        "url": "",
-        "sha256": "",
-    },
+    }
 }
 
 
