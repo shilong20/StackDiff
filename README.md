@@ -37,6 +37,8 @@ outputs/separation/ReS2/
 python src/core/scripts/image_sample.py --config configs/sample/ReS2.yml
 ```
 
+四种论文材料均提供采样配置：`ReS2.yml`、`MoS2.yml`、`MoTe2.yml`、`TaS2.yml`。
+
 STEM 仿真样本生成：
 
 ```bash
