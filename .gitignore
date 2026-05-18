@@ -16,6 +16,7 @@ outputs/
 logs/
 tmp/
 trash/
+src/core/sample/
 *.log
 
 # Large model/data artifacts
