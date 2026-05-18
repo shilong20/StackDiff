@@ -34,5 +34,5 @@ processing:
 
 paths:
   model_checkpoint: "models/checkpoints/MoTe2/ema_0.9999_200000.pt"
-  default_input: "data/examples/slip_psnr24/MoTe2"
+  default_input: "data/examples/MoTe2"
   default_output: "outputs/separation/MoTe2"

@@ -62,7 +62,7 @@ python generate_sample/Batch_generate.py --config generate_sample/ReS2.json
 ```bash
 # 准备输入：复制图片到 data/multilayer/ReS2/
 # 运行分解
-python src/main.py --config configs/separate/ReS2_MoS2.yml
+python src/main.py --config configs/separate/ReS2.yml
 
 # 查看结果：data/results/ReS2/<图片名>/
 #   ├── _original.png  # 输入原图
@@ -296,7 +296,7 @@ MOIRE_SAVE_LABELS=1 python3 generate_sample/Batch_generate.py --config generate_
 传统流程是：先生成双层 PNG → 手动运行 `python src/main.py ...` 分解 → 再运行 eval 脚本。
 现在可以直接用 eval 脚本完成“分解 + 原本 eval”，并在误差偏大时自动重试 4 次不同 seed，最终只保留误差最小的分解结果与 CSV 记录。
 
-**滑移（shift_pbc）示例**（双层 PNG 在 `data/examples/slip_psnr24/MoS2/`，分解输出到 `outputs/separation/MoS2/` 后再评估）：
+**滑移（shift_pbc）示例**（双层 PNG 在 `data/examples/MoS2/`，分解输出到 `outputs/separation/MoS2/` 后再评估）：
 ```bash
 python tools/evaluate_generate_sample_wraparound_pbc.py \
   --task shift_pbc \

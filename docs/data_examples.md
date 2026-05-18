@@ -8,7 +8,7 @@ result archives are not tracked in Git.
 
 - `data/examples/training/<material>/`: a few representative training-style
   STEM images and masks where available.
-- `data/examples/slip_psnr24/<material>/`: a few bilayer slip examples for
+- `data/examples/<material>/`: a few bilayer slip examples for
   smoke tests and documentation.
 - `generate_sample/*.xyz`: material structure files required by the synthetic
   generation pipeline.

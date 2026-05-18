@@ -34,5 +34,5 @@ processing:
 
 paths:
   model_checkpoint: "models/checkpoints/ReS2/ema_0.9999_200000.pt"
-  default_input: "data/examples/slip_psnr24/ReS2"
+  default_input: "data/examples/ReS2"
   default_output: "outputs/separation/ReS2"

@@ -3,7 +3,6 @@
 This directory contains small examples copied from the development workspace
 for release smoke tests. It is not the full training or evaluation dataset.
 
+- `<material>/`: small bilayer demo inputs for ReS2, MoS2, MoTe2, and TaS2.
+  Files are renamed to simple numeric IDs such as `0.png`, `1.png`, and so on.
 - `training/`: representative training-style images and masks for the four paper materials.
-- `slip_psnr24/`: small bilayer slip examples for ReS2, MoS2, MoTe2, and TaS2.
-  ReS2 examples come from a PSNR=24 noise-vs-GT set; the other materials use
-  existing slip example folders because PSNR=24 variants were not available locally.
