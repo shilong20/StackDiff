@@ -68,7 +68,7 @@ python src/core/scripts/image_sample.py --config configs/sample/MoTe2.yml
 python src/core/scripts/image_sample.py --config configs/sample/TaS2.yml
 ```
 
-Training configs are templates for locally prepared source images. Before training, update the source-image and mask paths in `configs/train/<material>.yml`.
+Training configs are templates for locally prepared source images. Before training, update the source-image and mask paths (`source_data.data_root` and `source_data.mask_path`) in `configs/train/<material>.yml`.
 
 ```bash
 python src/core/scripts/image_train.py --config configs/train/ReS2.yml

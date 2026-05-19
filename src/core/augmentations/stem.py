@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Purpose: Image augmentation utilities for the optional synthetic material STEM generator. The functions apply geometric transforms, carbon-like background, cropping, flips, scan/Poisson/Gaussian noise, and display normalization.
-Related files: src/tools/synthetic_materials/runner.py, src/tools/synthetic_materials/generate.py, and src/tools/synthetic_materials/configs/*.json.
-CLI usage: This module is imported by src/tools/synthetic_materials/runner.py and is not intended to be executed directly.
+Purpose: Shared STEM image augmentation utilities for StackDiff training and synthetic-data generation. The functions apply geometric transforms, carbon-like background, cropping, flips, scan/Poisson/Gaussian noise, display normalization, and tensor scaling.
+Related files: src/core/datasets/augment_dataset.py and src/tools/synthetic_materials/runner.py.
+CLI usage: This module is imported by training and synthetic-generation entry points and is not intended to be executed directly.
 """
 
 from __future__ import annotations
@@ -138,7 +138,7 @@ def choose_crop(dist_map: np.ndarray, side: int, safe_radius: int) -> Tuple[int,
     H, W = dist_map.shape
     half = side // 2
     if H <= 2 * half or W <= 2 * half:
-        raise RuntimeError('Invalid StackDiff configuration or runtime parameter.')
+        raise RuntimeError("Crop side is too large for the augmentation mask.")
     allowed = dist_map > float(safe_radius)
     border = np.zeros_like(allowed, dtype=bool)
     border[half:H - half, half:W - half] = True
@@ -148,7 +148,7 @@ def choose_crop(dist_map: np.ndarray, side: int, safe_radius: int) -> Tuple[int,
         allowed = dist_map > float(side / 2.0)
         cand = np.argwhere(allowed & border)
         if cand.size == 0:
-            raise RuntimeError('Invalid StackDiff configuration or runtime parameter.')
+            raise RuntimeError("No safe crop center was found for the requested crop side.")
     cy, cx = cand[np.random.randint(len(cand))]
     return int(cy), int(cx)
 
@@ -260,7 +260,7 @@ def adjust_display_post_noise(
 def apply_edge_mask(
     image: np.ndarray, *, prob: float = 0.0005, bg_min: float = 0.0, bg_max: float = 0.05
 ) -> np.ndarray:
-    """Internal helper."""
+    """Randomly replace irregular edge regions with low-intensity background."""
     img = np.asarray(image, dtype=np.float32)
     h, w = img.shape[:2]
 
@@ -327,7 +327,7 @@ def _uniform(a: float, b: float) -> float:
 
 
 def _maybe_sample(value: Any) -> Any:
-    """Internal helper."""
+    """Sample a scalar from a two-value range or return a fixed value."""
     if isinstance(value, (list, tuple)) and len(value) == 2 and all(isinstance(x, (int, float)) for x in value):
         lo, hi = float(value[0]), float(value[1])
         return _uniform(lo, hi)
@@ -363,7 +363,7 @@ class AugmentConfig:
         return name.lower() not in self.disabled
 
     def sample_once(self) -> Dict[str, Any]:
-        """Internal helper."""
+        """Sample one concrete augmentation parameter set from the config."""
         c = self.cfg or {}
         out: Dict[str, Any] = {}
 
@@ -499,7 +499,7 @@ class AugmentConfig:
         return out
 
 
-class OnlineAugmentor:
+class StemAugmentor:
     def __init__(
         self,
         *,
@@ -515,7 +515,7 @@ class OnlineAugmentor:
         self.aug_cfg = aug_cfg
 
     def __call__(self, img: Image.Image | np.ndarray) -> np.ndarray:
-        """Internal helper."""
+        """Apply the configured STEM augmentation pipeline and return a 1xHxW tensor array in [-1, 1]."""
         img01 = to_float01(img)
         H, W = img01.shape[:2]
         params = self.aug_cfg.sample_once()
@@ -624,7 +624,7 @@ class OnlineAugmentor:
                 gamma=params.get("display.gamma", None),
             )
 
-        # Output [-1, 1]，C=1
+
         patch = np.clip(patch, 0.0, 1.0)
-        patch = (patch.astype(np.float32) * 2.0 - 1.0)[None, ...]  # 1×H×W
+        patch = (patch.astype(np.float32) * 2.0 - 1.0)[None, ...]  # 1xHxW
         return patch

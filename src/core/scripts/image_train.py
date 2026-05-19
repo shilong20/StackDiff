@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Purpose: Train a StackDiff diffusion checkpoint from locally prepared source images using the public YAML training template. Training writes checkpoints and logs under train.output_dir.
-Related files: configs/train/*.yml, src/core/datasets/online_augment_dataset.py, src/data_prep/online_augmentor.py, and src/core/guided_diffusion/train_util.py.
-CLI usage: python src/core/scripts/image_train.py --config configs/train/ReS2.yml (arguments: --config selects the training YAML; update online.data_root and online.mask_path first).
+Related files: configs/train/*.yml, src/core/datasets/augment_dataset.py, src/core/augmentations/stem.py, and src/core/guided_diffusion/train_util.py.
+CLI usage: python src/core/scripts/image_train.py --config configs/train/ReS2.yml (arguments: --config selects the training YAML; update source_data.data_root and source_data.mask_path first).
 """
 
 import argparse
@@ -16,7 +16,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from guided_diffusion import dist_util, logger
-from datasets.online_augment_dataset import load_online_data
+from datasets.augment_dataset import load_training_data
 from guided_diffusion.resample import create_named_schedule_sampler
 from guided_diffusion.script_util import (
     model_and_diffusion_defaults,
@@ -26,6 +26,12 @@ from guided_diffusion.script_util import (
 )
 from guided_diffusion.train_util import TrainLoop
 import torch
+
+
+def get_source_data_config(yaml_cfg):
+    """Return the preferred source-data config, with legacy online-key fallback."""
+    return yaml_cfg.get("source_data", yaml_cfg.get("online", {}))
+
 
 def main():
     parser = create_argparser()
@@ -43,7 +49,7 @@ def main():
     # train: { data_dir, output_dir, batch_size, lr, ema_rate, log_interval, save_interval, lr_anneal_steps, max_steps, microbatch, schedule_sampler, use_fp16 }
 
     train_cfg = yaml_cfg.get("train", {})
-    online_cfg = yaml_cfg.get("online", {})
+    source_data_cfg = get_source_data_config(yaml_cfg)
     augment_cfg = yaml_cfg.get("augment", {})
     save_samples_cfg = yaml_cfg.get("save_samples", {})
     model_cfg = yaml_cfg.get("model", {})
@@ -110,31 +116,31 @@ def main():
             cur = torch.cuda.current_device()
             logger.log(f"CUDA device index: {cur}, name: {torch.cuda.get_device_name(cur)}")
             if int(gpu) >= 0 and cur == 0:
-                logger.log('StackDiff public training/sampling helper.')
+                logger.log("CUDA_VISIBLE_DEVICES remaps the selected physical GPU to process-local cuda:0.")
         except Exception:
             pass
 
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
 
     logger.log("creating data loader...")
-    data_root = online_cfg.get("data_root", "data/training_source")
-    mask_path = online_cfg.get("mask_path", os.path.join(data_root, "mask.png"))
-    if not bool(online_cfg.get("enable", True)):
-        raise ValueError("This public training entry expects online.enable=true in the YAML config.")
-    data = load_online_data(
+    data_root = source_data_cfg.get("data_root", "data/training_source")
+    mask_path = source_data_cfg.get("mask_path", os.path.join(data_root, "mask.png"))
+    if not bool(source_data_cfg.get("enable", True)):
+        raise ValueError("This public training entry expects source_data.enable=true in the YAML config.")
+    data = load_training_data(
         data_root=data_root,
         mask_path=mask_path,
-        mask_cache=online_cfg.get("mask_cache"),
+        mask_cache=source_data_cfg.get("mask_cache"),
         batch_size=args.batch_size,
         image_size=args.image_size,
         augment_cfg=augment_cfg,
         save_samples_cfg=save_samples_cfg,
-        num_workers=int(online_cfg.get("num_workers", 4)),
-        pin_memory=bool(online_cfg.get("pin_memory", True)),
-        prefetch_factor=int(online_cfg.get("prefetch_factor", 2)),
-        persistent_workers=bool(online_cfg.get("persistent_workers", True)),
+        num_workers=int(source_data_cfg.get("num_workers", 4)),
+        pin_memory=bool(source_data_cfg.get("pin_memory", True)),
+        prefetch_factor=int(source_data_cfg.get("prefetch_factor", 2)),
+        persistent_workers=bool(source_data_cfg.get("persistent_workers", True)),
     )
-    logger.log(f"online data enabled. root={data_root}, mask={mask_path}")
+    logger.log(f"source data enabled. root={data_root}, mask={mask_path}")
 
     logger.log("training...")
     train_loop = TrainLoop(

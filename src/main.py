@@ -482,7 +482,7 @@ def main():
                 )
             logger.info(f"Auto-crop enabled: generated {auto_plan_count} crop plans")
             logger.info(
-                "Auto-crop settings: unit range[%.2f, %.2f] nm，tile=%d px",
+                "Auto-crop settings: unit range[%.2f, %.2f] nm, tile=%d px",
                 unit_min,
                 unit_max,
                 tile_size_px,

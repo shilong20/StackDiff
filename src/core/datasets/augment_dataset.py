@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Purpose: Provide an IterableDataset that samples local source STEM images, applies augmentation, and yields tensors for StackDiff training. Optional preview images may be written when save_samples.enable is true.
-Related files: configs/train/*.yml, src/core/scripts/image_train.py, and src/data_prep/online_augmentor.py.
+Purpose: Provide an IterableDataset that samples local source STEM images, applies shared StackDiff augmentation, and yields tensors for training. Optional preview images may be written when save_samples.enable is true.
+Related files: configs/train/*.yml, src/core/scripts/image_train.py, and src/core/augmentations/stem.py.
 CLI usage: This module is imported by src/core/scripts/image_train.py and is not intended to be executed directly.
 """
 
@@ -21,11 +21,11 @@ from torch.utils.data import IterableDataset, DataLoader, get_worker_info
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from data_prep.online_augmentor import OnlineAugmentor, AugmentConfig, to_float01, distance_transform
+from core.augmentations.stem import StemAugmentor, AugmentConfig, to_float01, distance_transform
 
 
 def worker_init_fn(worker_id: int):
-    """StackDiff public training/sampling helper."""
+    """Initialize worker-local random seeds and thread limits."""
     import os
 
 
@@ -61,7 +61,7 @@ def _list_image_files_recursively(data_dir: str) -> List[str]:
     return results
 
 
-class OnlineAugmentIterableDataset(IterableDataset):
+class TrainingAugmentIterableDataset(IterableDataset):
     def __init__(
         self,
         *,
@@ -104,7 +104,7 @@ class OnlineAugmentIterableDataset(IterableDataset):
             mask01 = cache.get("mask")
             dist_map = cache.get("dist")
             if mask01 is None or dist_map is None:
-                raise RuntimeError('StackDiff public training/sampling helper.')
+                raise RuntimeError("Mask cache is missing required mask or distance-transform arrays.")
             self._mask01 = mask01.astype(np.float32)
             self._dist_map = dist_map.astype(np.float32)
             return self._mask01, self._dist_map
@@ -131,15 +131,15 @@ class OnlineAugmentIterableDataset(IterableDataset):
         if self._paths is None:
             if not os.path.isdir(self.data_root):
                 raise RuntimeError(
-                    'StackDiff public training/sampling helper.'
-                    f"{self.data_root} (abs={os.path.abspath(self.data_root)})"
+                    f"Training source image directory does not exist: {self.data_root} "
+                    f"(abs={os.path.abspath(self.data_root)})"
                 )
             self._paths = _list_image_files_recursively(self.data_root)
             if not self._paths:
-                raise RuntimeError('StackDiff public training/sampling helper.')
+                raise RuntimeError(f"No training images were found under {self.data_root}.")
         if self._augmentor is None:
             mask01, dist_map = self._load_mask_and_cache()
-            self._augmentor = OnlineAugmentor(
+            self._augmentor = StemAugmentor(
                 mask01=mask01,
                 dist_map=dist_map,
                 aug_cfg=AugmentConfig(image_size=self.image_size, cfg=self.augment_cfg),
@@ -163,7 +163,7 @@ class OnlineAugmentIterableDataset(IterableDataset):
             img_path = self._sample_path(rng)
             try:
                 img = Image.open(img_path).convert('L')
-                patch = self._augmentor(img)  # 1×H×W, float32, [-1,1]
+                patch = self._augmentor(img)  # 1xHxW, float32, [-1,1]
                 # Convert numpy array to torch tensor
                 patch_tensor = torch.from_numpy(patch).float()
                 if self._save_enabled and self._save_dir:
@@ -174,7 +174,7 @@ class OnlineAugmentIterableDataset(IterableDataset):
                 continue
 
     def _save_patch(self, patch: np.ndarray, origin_path: str, worker_tag: str) -> None:
-        # patch: 1×H×W, [-1,1]
+        # patch: 1xHxW, [-1,1]
         arr = np.asarray(patch[0], dtype=np.float32)
         arr = np.clip((arr + 1.0) * 0.5, 0.0, 1.0)
         arr255 = (arr * 255.0).astype(np.uint8)
@@ -194,7 +194,7 @@ class OnlineAugmentIterableDataset(IterableDataset):
             pass
 
 
-def load_online_data(
+def load_training_data(
     *,
     data_root: str,
     mask_path: str,
@@ -208,8 +208,8 @@ def load_online_data(
     prefetch_factor: int = 2,
     persistent_workers: bool = True,
 ):
-    """StackDiff public training/sampling helper."""
-    dataset = OnlineAugmentIterableDataset(
+    """Build an infinite training data iterator from local source images."""
+    dataset = TrainingAugmentIterableDataset(
         data_root=data_root,
         mask_path=mask_path,
         mask_cache=mask_cache,

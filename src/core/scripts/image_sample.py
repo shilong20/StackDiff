@@ -85,7 +85,7 @@ def main():
             cur = th.cuda.current_device()
             logger.log(f"Current GPU: cuda:{cur} ({th.cuda.get_device_name(cur)})")
             if getattr(args, "gpu", -1) >= 0 and cur == 0:
-                logger.log(f"Note: CUDA_VISIBLE_DEVICES is set to {args.gpu}，cuda:0 maps to nvidia-smi:{args.gpu}")
+                logger.log(f"Note: CUDA_VISIBLE_DEVICES is set to {args.gpu}, cuda:0 maps to nvidia-smi:{args.gpu}")
         except Exception:
             pass
     model, diffusion = create_model_and_diffusion(

@@ -23,7 +23,7 @@ Alternatively, edit a JSON file under `configs/` and set `incostem_path` to an a
 
 - `generate.py`: command-line entry point.
 - `runner.py`: structure construction, simulator invocation, augmentation, and PNG writing.
-- `augment.py`: image augmentation utilities used by `runner.py`.
+- Shared augmentation utilities are imported from `src/core/augmentations/stem.py`.
 - `configs/*.json`: material generation configurations.
 - `structures/*.xyz`: monolayer structure files.
 - `masks/*.png`: safe-crop masks.

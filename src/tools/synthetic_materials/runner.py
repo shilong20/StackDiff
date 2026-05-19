@@ -1,6 +1,6 @@
 """
-Purpose: Backend for the optional multi-material synthetic STEM generator. It builds bilayer structures, calls the external incostem executable, applies augmentations, and writes 128 x 128 PNG images plus optional labels.
-Related files: src/tools/synthetic_materials/generate.py, src/tools/synthetic_materials/configs/*.json, src/tools/synthetic_materials/structures/*.xyz, src/tools/synthetic_materials/masks/*.png, and src/tools/synthetic_materials/augment.py.
+Purpose: Backend for the optional multi-material synthetic STEM generator. It builds bilayer structures, calls the external incostem executable, applies shared StackDiff augmentation, and writes 128 x 128 PNG images plus optional labels.
+Related files: src/tools/synthetic_materials/generate.py, src/tools/synthetic_materials/configs/*.json, src/tools/synthetic_materials/structures/*.xyz, src/tools/synthetic_materials/masks/*.png, and src/core/augmentations/stem.py.
 CLI usage: Use python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/ReS2.json.
 """
 
@@ -50,7 +50,7 @@ _DEFAULT_PERIOD_T1T2_A: dict[str, tuple[tuple[float, float], tuple[float, float]
     "tas2": ((3.33, 0.0), (1.66, -2.88)),
 }
 
-from augment import (  # type: ignore  # noqa: E402
+from core.augmentations.stem import (  # noqa: E402
     AugmentConfig,
     add_carbon_background,
     add_gaussian_noise,
@@ -548,7 +548,7 @@ def _augment_and_track_gt(
         )
 
     patch = np.clip(patch, 0.0, 1.0)
-    patch_n11 = (patch.astype(np.float32) * 2.0 - 1.0)[None, ...]  # 1×H×W
+    patch_n11 = (patch.astype(np.float32) * 2.0 - 1.0)[None, ...]  # 1xHxW
     meta = {
         "H": int(H),
         "W": int(W),

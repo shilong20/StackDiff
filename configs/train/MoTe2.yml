@@ -42,7 +42,7 @@ model:
   rescale_timesteps: false
   rescale_learned_sigmas: false
 
-online:
+source_data:
   enable: true
   data_root: data/training_source/MoTe2
   mask_path: data/training_source/MoTe2/mask.png
