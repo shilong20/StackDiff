@@ -1,17 +1,18 @@
 # StackDiff
 
-StackDiff is a diffusion-based toolkit for ReS2 multilayer STEM image separation and interlayer analysis. This release is intentionally compact: it keeps the ReS2 inference pipeline, a small ReS2 example set, ReS2 lattice/interlayer analysis utilities, and an optional ReS2 synthetic STEM generator.
+StackDiff is a diffusion-based toolkit for multilayer and material-stacking STEM image separation. This public release includes runnable configs and small smoke-test examples for the four paper materials: ReS2, MoS2, MoTe2, and TaS2.
 
-Training scripts, large datasets, full experiment logs, non-ReS2 benchmark configs, and model checkpoint files are not included in the public repository.
+Training datasets, full evaluation sets, experiment logs, and model checkpoint files are not included in Git. Each material is expected to use one released EMA checkpoint.
 
 ## Contents
 
-- `src/main.py`: ReS2 multilayer separation entry point.
-- `configs/separate/ReS2.yml`: default ReS2 separation configuration.
-- `data/examples/ReS2/`: small demo multilayer inputs.
-- `tools/pred_dadb/`: ReS2 atom detection, lattice-vector estimation, and bilayer classification.
-- `tools/analyze_interlayer_res2.py`: slip and twist analysis built on `tools/pred_dadb`.
-- `tools/synthetic_res2/`: optional ReS2 synthetic bilayer STEM generator.
+- `src/main.py`: YAML-driven multilayer separation entry point.
+- `configs/separate/`: public separation configs for ReS2, MoS2, MoTe2, and TaS2.
+- `configs/sample/`: public unconditional sampling configs for the same four materials.
+- `configs/train/`: training templates for locally prepared source images.
+- `data/examples/<material>/`: small demo multilayer inputs named `0.png` through `4.png`.
+- `tools/synthetic_materials/`: optional synthetic STEM generator assets for the four materials.
+- `tools/res2_stacking_analysis/`: ReS2-specific stacking, slip, and twist analysis example.
 
 ## Installation
 
@@ -19,72 +20,63 @@ Training scripts, large datasets, full experiment logs, non-ReS2 benchmark confi
 pip install -r requirements.txt
 ```
 
-The separation pipeline expects a ReS2 checkpoint at:
+Place released checkpoints at:
 
 ```text
 models/checkpoints/ReS2/ema_0.9999_200000.pt
+models/checkpoints/MoS2/ema_0.9999_200000.pt
+models/checkpoints/MoTe2/ema_0.9999_200000.pt
+models/checkpoints/TaS2/ema_0.9999_200000.pt
 ```
 
-Checkpoint files are not tracked by Git. After the public checkpoint is uploaded, fill the URL in `scripts/download_weights.py` or place the file manually at the path above.
+After public checkpoint URLs are available, `scripts/download_weights.py` can be filled and used as:
 
-## ReS2 Layer Separation
+```bash
+python scripts/download_weights.py --material all
+```
 
-Run the bundled ReS2 example:
+## Layer Separation
+
+Run one of the bundled examples:
 
 ```bash
 python src/main.py --config configs/separate/ReS2.yml
+python src/main.py --config configs/separate/MoS2.yml
+python src/main.py --config configs/separate/MoTe2.yml
+python src/main.py --config configs/separate/TaS2.yml
 ```
 
-By default, inputs are read from:
-
-```text
-data/examples/ReS2/
-```
-
-and outputs are written to:
-
-```text
-outputs/separation/ReS2/
-```
-
-For your own images, either place them under `data/examples/ReS2/` or edit `paths.default_input` and `paths.default_output` in `configs/separate/ReS2.yml`.
+By default, inputs are read from `data/examples/<material>/` and outputs are written to `outputs/separation/<material>/`.
 
 Expected outputs for each input image include:
 
-- `_original.png`: the processed input image.
+- `_original.png`: processed input image.
 - `_0.png`: separated layer 0.
 - `_1.png`: separated layer 1.
-- `_combine.png`: the reconstructed superposition.
+- `_combine.png`: reconstructed superposition.
 
-If your input filename ends with a physical field-of-view suffix such as `sample-7.1x3.1.png`, the auto-crop logic can infer a grid and crop/resize plan from that size. Otherwise, the pipeline falls back to the configured default grid settings.
+For your own images, edit `paths.default_input` and `paths.default_output` in the relevant YAML file. If an input filename ends with a physical field-of-view suffix such as `sample-7.1x3.1.png`, auto-crop can infer a grid and crop/resize plan from that size when enabled in the config.
 
-## ReS2 da/db and Interlayer Analysis
+## Sampling And Training Templates
 
-If you already have per-layer images organized as one folder per bilayer sample, with files named `*_0.png` and `*_1.png`, run:
-
-```bash
-python tools/pred_dadb/pipeline_bilayer_root.py \
-  --root path/to/bilayer_folders \
-  --out_csv outputs/res2_pred_dadb.csv
-```
-
-This detects Re atom positions, estimates the ReS2 lattice vectors `(da, db)` for each layer, and classifies each sample as `slip`, `twist`, `flip_slip`, `flip_twist`, or `unknown`.
-
-To compute physical interlayer quantities from the same folder tree:
+Generate unconditional samples from a released checkpoint:
 
 ```bash
-python tools/analyze_interlayer_res2.py \
-  --root path/to/bilayer_folders \
-  --out_csv outputs/res2_interlayer.csv \
-  --pred_csv outputs/res2_pred_dadb.csv \
-  --pred_atoms_dir outputs/res2_pred_dadb_atoms
+python src/core/scripts/image_sample.py --config configs/sample/ReS2.yml
+python src/core/scripts/image_sample.py --config configs/sample/MoS2.yml
+python src/core/scripts/image_sample.py --config configs/sample/MoTe2.yml
+python src/core/scripts/image_sample.py --config configs/sample/TaS2.yml
 ```
 
-For slip-like samples, the analyzer reports pixel and physical shifts and their projection in the `(da, db)` basis. For twist-like samples, it reports a refined twist angle.
+Training configs are templates for locally prepared source images. Before training, update the source-image and mask paths in `configs/train/<material>.yml`.
 
-## Optional Synthetic ReS2 Generator
+```bash
+python src/core/scripts/image_train.py --config configs/train/ReS2.yml
+```
 
-The optional generator lives under `tools/synthetic_res2/`.
+## Synthetic Material Generator
+
+The optional generator lives under `tools/synthetic_materials/` and includes JSON/XYZ/mask assets for ReS2, MoS2, MoTe2, and TaS2.
 
 It depends on the external `incostem` executable from the official computem/temsim project:
 
@@ -93,22 +85,49 @@ https://sourceforge.net/projects/computem/files/
 `incostem` is not distributed with StackDiff. Place a local executable at:
 
 ```text
-tools/synthetic_res2/incostem
+tools/synthetic_materials/incostem
 ```
 
-or edit `tools/synthetic_res2/config.json` and set `incostem_path` to an absolute path.
+or edit the material JSON and set `incostem_path` to an absolute path.
 
-Generate synthetic ReS2 bilayer PNGs:
+Generate synthetic bilayer PNGs:
 
 ```bash
-python tools/synthetic_res2/generate.py --config tools/synthetic_res2/config.json
+python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/ReS2.json
+python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/MoS2.json
+python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/MoTe2.json
+python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/TaS2.json
 ```
 
 To also export ground-truth label files:
 
 ```bash
-MOIRE_SAVE_LABELS=1 python tools/synthetic_res2/generate.py --config tools/synthetic_res2/config.json
+MOIRE_SAVE_LABELS=1 python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/ReS2.json
 ```
+
+## ReS2 Stacking Analysis Example
+
+The stacking-analysis tools are ReS2-specific examples. They demonstrate atom detection, per-layer lattice vector estimation, slip da/db projection, and twist/flip classification for separated ReS2 bilayers. They are not presented as material-general analysis tools.
+
+If you have one folder per bilayer sample with files named `*_0.png` and `*_1.png`, run:
+
+```bash
+python tools/res2_stacking_analysis/classify_bilayers.py \
+  --root path/to/bilayer_folders \
+  --out_csv outputs/res2_stacking.csv
+```
+
+To compute interlayer quantities from the same folder tree:
+
+```bash
+python tools/res2_stacking_analysis/analyze_interlayer.py \
+  --root path/to/bilayer_folders \
+  --out_csv outputs/res2_interlayer.csv \
+  --stacking_csv outputs/res2_stacking.csv \
+  --stacking_atoms_dir outputs/res2_stacking_atoms
+```
+
+For slip-like samples, the analyzer reports pixel/physical shifts and their projection in the `(da, db)` basis. For twist-like samples, it reports a refined twist angle.
 
 ## Repository Hygiene
 

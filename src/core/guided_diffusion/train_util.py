@@ -1,3 +1,9 @@
+"""
+Purpose: Training loop implementation for StackDiff diffusion checkpoints, including EMA updates, checkpoint writing, logging, and mixed-precision support.
+Related files: src/core/scripts/image_train.py, src/core/guided_diffusion/resample.py, and src/core/guided_diffusion/fp16_util.py.
+CLI usage: This module is imported by src/core/scripts/image_train.py and is not intended to be executed directly.
+"""
+
 import copy
 import functools
 import os

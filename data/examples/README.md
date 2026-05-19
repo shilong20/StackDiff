@@ -1,7 +1,9 @@
 # Example Data
 
-This directory contains a small ReS2 demo input set for release smoke tests. It
-is not the full training or evaluation dataset.
+This directory contains small public smoke-test input sets for the four paper
+materials. These files are not the full training or evaluation datasets.
 
-- `ReS2/`: small multilayer demo inputs renamed to numeric IDs such as
-  `0.png`, `1.png`, and so on.
+- `ReS2/`: numeric demo inputs `0.png` through `4.png`.
+- `MoS2/`: numeric demo inputs `0.png` through `4.png`.
+- `MoTe2/`: numeric demo inputs `0.png` through `4.png`.
+- `TaS2/`: numeric demo inputs `0.png` through `4.png`.

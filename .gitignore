@@ -20,7 +20,7 @@ src/core/sample/
 *.log
 
 # External simulator executable (download/compile locally)
-tools/synthetic_res2/incostem
+tools/synthetic_materials/incostem
 
 # Large model/data artifacts
 models/checkpoints/**/*.pt

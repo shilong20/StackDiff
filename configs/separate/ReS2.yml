@@ -1,4 +1,4 @@
-# ReS2 layer separation configuration.
+# Public ReS2 layer-separation configuration.
 material: ReS2
 description: "ReS2 multilayer STEM image separation"
 
@@ -28,9 +28,9 @@ processing:
     unit_size_range: [2.4, 4.8]
   sliding_window: true
 
-  # Optional whitelist of input files.
+  # Optional whitelist of input files relative to paths.default_input.
   # selected_files:
-  #   - "four_layers.png"
+  #   - "0.png"
 
 paths:
   model_checkpoint: "models/checkpoints/ReS2/ema_0.9999_200000.pt"

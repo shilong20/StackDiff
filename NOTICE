@@ -10,6 +10,6 @@ StackDiff includes code adapted from or inspired by the following projects:
 
 STEM simulation tools such as incostem/computem are external dependencies and
 are not distributed as part of this repository. Install or compile incostem
-separately, then place the executable at `tools/synthetic_res2/incostem` when
+separately, then place the executable at `tools/synthetic_materials/incostem` when
 running the generation pipeline locally. The official computem/temsim project
 files are available at https://sourceforge.net/projects/computem/files/.

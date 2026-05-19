@@ -2,11 +2,14 @@
 
 Model checkpoint files are not tracked in Git.
 
-The public ReS2 inference configuration expects:
+The public configs expect one released EMA checkpoint per material:
 
 ```text
 models/checkpoints/ReS2/ema_0.9999_200000.pt
+models/checkpoints/MoS2/ema_0.9999_200000.pt
+models/checkpoints/MoTe2/ema_0.9999_200000.pt
+models/checkpoints/TaS2/ema_0.9999_200000.pt
 ```
 
-Place the released ReS2 EMA checkpoint at that path before running
-`python src/main.py --config configs/separate/ReS2.yml`.
+After uploading public checkpoints, fill `scripts/download_weights.py`; until
+then, place the files manually at the paths above.

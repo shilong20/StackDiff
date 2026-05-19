@@ -1,0 +1,42 @@
+# Public MoS2 unconditional sampling configuration.
+
+paths:
+  model_path: models/checkpoints/MoS2/ema_0.9999_200000.pt
+  output_dir: outputs/sample/MoS2
+
+runtime:
+  gpu: 0
+
+sample:
+  num_samples: 4
+  batch_size: 4
+  clip_denoised: true
+  use_ddim: true
+  steps: 200
+  residual_debug: false
+
+model:
+  image_size: 128
+  num_channels: 256
+  num_res_blocks: 2
+  attention_resolutions: "32,16,8"
+  dropout: 0.0
+  class_cond: false
+  use_scale_shift_norm: true
+  resblock_updown: true
+  num_heads: 4
+  num_head_channels: -1
+  num_heads_upsample: -1
+  learn_sigma: true
+  use_fp16: true
+  use_new_attention_order: false
+  diffusion_steps: 1000
+  noise_schedule: linear
+  timestep_respacing: "200"
+  use_kl: false
+  predict_xstart: false
+  rescale_timesteps: false
+  rescale_learned_sigmas: false
+
+debug:
+  save_x0_trace: false

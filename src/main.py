@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Purpose: Command-line entry point for StackDiff layer separation from a YAML configuration. It reads input STEM images, loads the configured ReS2 checkpoint, runs diffusion-based separation, and writes layer outputs to disk.
-Related files: configs/separate/ReS2.yml, src/core/datasets/__init__.py, src/core/guided_diffusion/diffusion.py, and src/core/utils/image_preprocessor.py.
+Purpose: Command-line entry point for StackDiff layer separation from a YAML configuration. It reads input STEM images, loads the configured material checkpoint, runs diffusion-based separation, and writes layer outputs to disk.
+Related files: configs/separate/*.yml, src/core/datasets/__init__.py, src/core/guided_diffusion/diffusion.py, and src/core/utils/image_preprocessor.py.
 CLI usage: python src/main.py --config configs/separate/ReS2.yml (arguments: --config selects the YAML file; --verbose sets logging level).
 """
 
@@ -572,7 +572,7 @@ def main():
             }
 
 
-            if material in ['ReS2']:
+            if material in ['ReS2', 'MoS2', 'MoTe2', 'TaS2']:
                 base_config['type'] = 'STEM_separate'
             elif material == 'Mixed':
                 base_config['type'] = 'STEM_separate_mixed'
@@ -582,7 +582,7 @@ def main():
 
         materials = parse_materials_from_name(config.get('material', 'ReS2'))
 
-        material_keywords = {'ReS2'}
+        material_keywords = {'ReS2', 'MoS2', 'MoTe2', 'TaS2'}
         actual_materials = [m for m in materials if m in material_keywords]
 
 

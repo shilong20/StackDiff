@@ -1,3 +1,9 @@
+"""
+Purpose: Timestep respacing helpers and spaced-diffusion wrapper used by sampling and training entry points.
+Related files: src/core/guided_diffusion/gaussian_diffusion.py, src/core/guided_diffusion/script_util.py, and configs/sample/*.yml.
+CLI usage: This module is imported by guided-diffusion utilities and is not intended to be executed directly.
+"""
+
 import numpy as np
 import torch as th
 

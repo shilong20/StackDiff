@@ -1,7 +1,7 @@
 """
-Purpose: Download the released ReS2 EMA checkpoint into the default path used by the public inference configuration. The URL and checksum can be filled after uploading the checkpoint to a public host.
-Related files: README.md, models/checkpoints/README.md, configs/separate/ReS2.yml, and scripts/check_release.py.
-CLI usage: python scripts/download_weights.py --material ReS2 (arguments: --material=ReS2 or all; --force overwrites an existing checkpoint).
+Purpose: Download released StackDiff EMA checkpoints into the default paths used by the public material configs. The URL and checksum fields can be filled after uploading checkpoints to a public host.
+Related files: README.md, models/checkpoints/README.md, configs/separate/*.yml, configs/sample/*.yml, and scripts/check_release.py.
+CLI usage: python scripts/download_weights.py --material ReS2 (arguments: --material=ReS2/MoS2/MoTe2/TaS2/all; --force overwrites an existing checkpoint).
 """
 
 from __future__ import annotations
@@ -14,12 +14,14 @@ from urllib.request import urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
+MATERIALS = ("ReS2", "MoS2", "MoTe2", "TaS2")
 WEIGHTS = {
-    "ReS2": {
-        "path": "models/checkpoints/ReS2/ema_0.9999_200000.pt",
+    material: {
+        "path": f"models/checkpoints/{material}/ema_0.9999_200000.pt",
         "url": "",
         "sha256": "",
     }
+    for material in MATERIALS
 }
 
 

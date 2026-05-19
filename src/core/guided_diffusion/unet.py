@@ -1,3 +1,9 @@
+"""
+Purpose: UNet and related neural network building blocks used by StackDiff material checkpoints.
+Related files: src/core/guided_diffusion/script_util.py, src/core/guided_diffusion/nn.py, and src/core/guided_diffusion/models.py.
+CLI usage: This module is imported by model factory utilities and is not intended to be executed directly.
+"""
+
 from abc import abstractmethod
 
 import math

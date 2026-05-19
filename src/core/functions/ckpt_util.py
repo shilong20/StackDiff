@@ -1,3 +1,9 @@
+"""
+Purpose: Utility functions for downloading and locating legacy guided-diffusion checkpoints. StackDiff public material checkpoints are documented separately under models/checkpoints.
+Related files: src/core/guided_diffusion/diffusion.py, models/checkpoints/README.md, and scripts/download_weights.py.
+CLI usage: This module is imported by sampler utilities and is not intended to be executed directly.
+"""
+
 import os, hashlib
 import requests
 from tqdm import tqdm

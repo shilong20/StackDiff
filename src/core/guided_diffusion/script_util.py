@@ -1,3 +1,9 @@
+"""
+Purpose: Model and diffusion factory utilities plus argparse helpers for StackDiff training and sampling scripts.
+Related files: src/core/scripts/image_sample.py, src/core/scripts/image_train.py, and src/core/guided_diffusion/unet.py.
+CLI usage: This module is imported by CLI scripts and is not intended to be executed directly.
+"""
+
 import argparse
 import inspect
 

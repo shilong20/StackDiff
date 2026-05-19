@@ -1,6 +1,6 @@
 """
 Purpose: Validate the StackDiff public release workspace for oversized files, private artifacts, local absolute paths, and non-public checkpoint references. The script prints release issues and exits with a non-zero status when cleanup is required.
-Related files: .gitignore, README.md, models/checkpoints/README.md, and configs/separate/ReS2.yml.
+Related files: .gitignore, README.md, models/checkpoints/README.md, and configs/**/*.yml.
 CLI usage: python scripts/check_release.py (run from the repository root; no arguments are required).
 """
 
@@ -36,6 +36,9 @@ FORBIDDEN_DIRS = {
 }
 ALLOWED_CHECKPOINT_PATHS = {
     "models/checkpoints/ReS2/ema_0.9999_200000.pt",
+    "models/checkpoints/MoS2/ema_0.9999_200000.pt",
+    "models/checkpoints/MoTe2/ema_0.9999_200000.pt",
+    "models/checkpoints/TaS2/ema_0.9999_200000.pt",
 }
 
 
@@ -55,7 +58,7 @@ def iter_files() -> list[Path]:
 
 def is_public_runtime_config(path: Path) -> bool:
     rel_path = rel(path)
-    return rel_path == "configs/separate/ReS2.yml"
+    return rel_path.startswith("configs/") and rel_path.endswith((".yml", ".yaml"))
 
 
 def main() -> int:

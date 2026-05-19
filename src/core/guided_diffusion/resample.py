@@ -1,3 +1,9 @@
+"""
+Purpose: Schedule-sampler utilities for diffusion training, including uniform and loss-aware timestep sampling.
+Related files: src/core/guided_diffusion/train_util.py, src/core/scripts/image_train.py, and configs/train/*.yml.
+CLI usage: This module is imported by training code and is not intended to be executed directly.
+"""
+
 from abc import ABC, abstractmethod
 
 import numpy as np
