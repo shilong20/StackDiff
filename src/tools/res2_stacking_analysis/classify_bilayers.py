@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Purpose: Batch-process folders of separated bilayer ReS2 images, estimate each layer origin and da/db vectors, and classify samples as slip, twist, flip_slip, flip_twist, or unknown. Outputs are CSV summaries and optional atom-point JSON files.
-Related files: tools/res2_stacking_analysis/single_layer_lattice.py, tools/res2_stacking_analysis/atoms.py, tools/res2_stacking_analysis/cycles.py, and tools/res2_stacking_analysis/analyze_interlayer.py.
-CLI usage: python tools/res2_stacking_analysis/classify_bilayers.py --root outputs/ReS2 --out_csv outputs/res2_stacking.csv (arguments: --root=input folders; --out_csv=summary CSV; --atoms_out_dir=optional atom JSON directory).
+Related files: src/tools/res2_stacking_analysis/single_layer_lattice.py, src/tools/res2_stacking_analysis/atoms.py, src/tools/res2_stacking_analysis/cycles.py, and src/tools/res2_stacking_analysis/analyze_interlayer.py.
+CLI usage: python src/tools/res2_stacking_analysis/classify_bilayers.py --root outputs/ReS2 --out_csv outputs/res2_stacking.csv (arguments: --root=input folders; --out_csv=summary CSV; --atoms_out_dir=optional atom JSON directory).
 """
 
 from __future__ import annotations
@@ -20,12 +20,12 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 from PIL import Image
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from tools.res2_stacking_analysis.atoms import AtomDetectConfig, detect_atoms_from_image  # noqa: E402
-from tools.res2_stacking_analysis.single_layer_lattice import run_single_layer_lattice_pipeline  # noqa: E402
+from src.tools.res2_stacking_analysis.atoms import AtomDetectConfig, detect_atoms_from_image  # noqa: E402
+from src.tools.res2_stacking_analysis.single_layer_lattice import run_single_layer_lattice_pipeline  # noqa: E402
 
 
 def _unit(v: np.ndarray) -> np.ndarray:
@@ -238,7 +238,7 @@ def _analyze_one_folder(
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True, help="Root directory containing bilayer sample subfolders.")
-    ap.add_argument("--out_csv", default="", help="Output CSV path. If omitted, a timestamped CSV is written under tools/res2_stacking_analysis/.")
+    ap.add_argument("--out_csv", default="", help="Output CSV path. If omitted, a timestamped CSV is written under src/tools/res2_stacking_analysis/.")
     ap.add_argument("--slip_thresh_deg", type=float, default=5.0)
     ap.add_argument("--out_scale", type=float, default=4.0, help="Coordinate scale for outputs. The default maps 128 px coordinates to 512 px.")
     ap.add_argument("--limit", type=int, default=0, help="Process only the first N subfolders; 0 means all.")
@@ -265,7 +265,7 @@ def main() -> int:
     if str(args.out_csv).strip():
         out_csv = Path(str(args.out_csv))
     else:
-        out_csv = _REPO_ROOT / "tools" / "res2_stacking_analysis" / f"res2_stacking_{stamp}.csv"
+        out_csv = _REPO_ROOT / "src" / "tools" / "res2_stacking_analysis" / f"res2_stacking_{stamp}.csv"
     out_csv.parent.mkdir(parents=True, exist_ok=True)
 
     atoms_out_dir: Optional[Path] = None

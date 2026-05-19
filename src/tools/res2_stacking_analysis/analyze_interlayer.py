@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Purpose: Analyze interlayer geometry for folders of separated bilayer ReS2 outputs. It reuses or runs the ReS2 stacking classifier, then reports slip shifts, da/db coordinate projections, and fine twist angles in a CSV file.
-Related files: tools/res2_stacking_analysis/classify_bilayers.py, tools/res2_stacking_analysis/single_layer_lattice.py, and README.md.
-CLI usage: python tools/res2_stacking_analysis/analyze_interlayer.py --root outputs/ReS2 --out_csv outputs/res2_interlayer.csv (arguments: --root=input folders; --out_csv=analysis CSV; --force_stacking reruns stacking classification).
+Related files: src/tools/res2_stacking_analysis/classify_bilayers.py, src/tools/res2_stacking_analysis/single_layer_lattice.py, and README.md.
+CLI usage: python src/tools/res2_stacking_analysis/analyze_interlayer.py --root outputs/ReS2 --out_csv outputs/res2_interlayer.csv (arguments: --root=input folders; --out_csv=analysis CSV; --force_stacking reruns stacking classification).
 """
 
 from __future__ import annotations
@@ -21,11 +21,11 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 from scipy.spatial import KDTree
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-_STACKING_PIPELINE = _REPO_ROOT / "tools" / "res2_stacking_analysis" / "classify_bilayers.py"
+_STACKING_PIPELINE = _REPO_ROOT / "src" / "tools" / "res2_stacking_analysis" / "classify_bilayers.py"
 
 
 def _parse_sideA_A_from_folder(name: str) -> Optional[float]:

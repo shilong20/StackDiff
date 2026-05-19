@@ -1,6 +1,6 @@
 """
 Purpose: Estimate Re-chain directions from Re4-cycle centroids and infer da/db pixel vectors from centroid-neighbor geometry. It returns direction vectors and diagnostic statistics for downstream classification.
-Related files: tools/res2_stacking_analysis/cycles.py, tools/res2_stacking_analysis/single_layer_lattice.py, and tools/res2_stacking_analysis/classify_bilayers.py.
+Related files: src/tools/res2_stacking_analysis/cycles.py, src/tools/res2_stacking_analysis/single_layer_lattice.py, and src/tools/res2_stacking_analysis/classify_bilayers.py.
 CLI usage: This module is imported by the da/db pipelines and is not intended to be executed directly.
 """
 

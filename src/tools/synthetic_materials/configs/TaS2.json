@@ -20,7 +20,7 @@
   "incostem_path": "../incostem",
   "incostem_exclude_symbols": [],
   "output_dir": "outputs/generated/TaS2_rotation",
-  "mask_path": "tools/synthetic_materials/masks/TaS2.png",
+  "mask_path": "src/tools/synthetic_materials/masks/TaS2.png",
   "x_range": {
     "start": 0.0,
     "stop": 0.4,

@@ -13,8 +13,8 @@ https://sourceforge.net/projects/computem/files/
 Place the executable here:
 
 ```bash
-cp /path/to/incostem tools/synthetic_materials/incostem
-chmod +x tools/synthetic_materials/incostem
+cp /path/to/incostem src/tools/synthetic_materials/incostem
+chmod +x src/tools/synthetic_materials/incostem
 ```
 
 Alternatively, edit a JSON file under `configs/` and set `incostem_path` to an absolute path. The local executable path is ignored by Git.
@@ -31,10 +31,10 @@ Alternatively, edit a JSON file under `configs/` and set `incostem_path` to an a
 ## Usage
 
 ```bash
-python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/ReS2.json
-python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/MoS2.json
-python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/MoTe2.json
-python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/TaS2.json
+python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/ReS2.json
+python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/MoS2.json
+python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/MoTe2.json
+python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/TaS2.json
 ```
 
 By default, generated PNG files are written to `outputs/generated/<material>_rotation`.
@@ -42,5 +42,5 @@ By default, generated PNG files are written to `outputs/generated/<material>_rot
 To also export ground-truth label files:
 
 ```bash
-MOIRE_SAVE_LABELS=1 python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/ReS2.json
+MOIRE_SAVE_LABELS=1 python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/ReS2.json
 ```

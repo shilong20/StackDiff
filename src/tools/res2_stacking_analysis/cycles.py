@@ -1,6 +1,6 @@
 """
 Purpose: Extract non-overlapping Re4 cycles from Re atom point clouds and provide seed/template growth helpers for ReS2 lattice analysis. Outputs include cycle indices, centroids, and diagnostics used for da/db estimation.
-Related files: tools/res2_stacking_analysis/single_layer_lattice.py, tools/res2_stacking_analysis/centroid_chain.py, and tools/res2_stacking_analysis/classify_bilayers.py.
+Related files: src/tools/res2_stacking_analysis/single_layer_lattice.py, src/tools/res2_stacking_analysis/centroid_chain.py, and src/tools/res2_stacking_analysis/classify_bilayers.py.
 CLI usage: This module is imported by the da/db pipelines and is not intended to be executed directly.
 """
 
@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from tools.res2_stacking_analysis.centroid_chain import _axis_angle_deg
+from src.tools.res2_stacking_analysis.centroid_chain import _axis_angle_deg
 
 _RE_FOV_NM = re.compile(r"_(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$")
 

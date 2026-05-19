@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Purpose: Image augmentation utilities for the optional synthetic material STEM generator. The functions apply geometric transforms, carbon-like background, cropping, flips, scan/Poisson/Gaussian noise, and display normalization.
-Related files: tools/synthetic_materials/runner.py, tools/synthetic_materials/generate.py, and tools/synthetic_materials/configs/*.json.
-CLI usage: This module is imported by tools/synthetic_materials/runner.py and is not intended to be executed directly.
+Related files: src/tools/synthetic_materials/runner.py, src/tools/synthetic_materials/generate.py, and src/tools/synthetic_materials/configs/*.json.
+CLI usage: This module is imported by src/tools/synthetic_materials/runner.py and is not intended to be executed directly.
 """
 
 from __future__ import annotations

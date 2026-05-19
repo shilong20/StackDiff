@@ -1,6 +1,6 @@
 """
 Purpose: Detect Re atom coordinates from a single-layer ReS2 image. The main function accepts a grayscale/RGB image array and returns atom points in image coordinates plus optional diagnostics.
-Related files: tools/res2_stacking_analysis/single_layer_lattice.py and tools/res2_stacking_analysis/classify_bilayers.py.
+Related files: src/tools/res2_stacking_analysis/single_layer_lattice.py and src/tools/res2_stacking_analysis/classify_bilayers.py.
 CLI usage: This module is imported by the da/db pipelines and is not intended to be executed directly.
 """
 

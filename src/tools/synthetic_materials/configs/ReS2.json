@@ -1,26 +1,28 @@
 {
-  "material": "MoTe2",
+  "material": "ReS2",
   "num": 1000,
   "pipeline_mode": "final",
   "shift_basis": "t1t2",
   "period": {
     "mode": "fixed",
     "t1_A": [
-      3.49,
+      6.42,
       0.0
     ],
     "t2_A": [
-      0.0,
-      6.37
+      -3.27,
+      -5.71
     ]
   },
   "twist_period_deg": 180.0,
-  "lattice_basis_symbol": "Mo",
-  "structure_path": "../structures/MoTe2.xyz",
+  "lattice_basis_symbol": "Re",
+  "structure_path": "../structures/ReS2.xyz",
   "incostem_path": "../incostem",
-  "incostem_exclude_symbols": [],
-  "output_dir": "outputs/generated/MoTe2_rotation",
-  "mask_path": "tools/synthetic_materials/masks/MoTe2.png",
+  "incostem_exclude_symbols": [
+    "S"
+  ],
+  "output_dir": "outputs/generated/ReS2_rotation",
+  "mask_path": "src/tools/synthetic_materials/masks/ReS2.png",
   "x_range": {
     "start": 0.0,
     "stop": 0.4,
@@ -96,10 +98,10 @@
     },
     "crop": {
       "side": [
-        270,
-        380
+        400,
+        600
       ],
-      "safe_radius": 270
+      "safe_radius": 372
     },
     "flip": {
       "h_prob": 0.5,

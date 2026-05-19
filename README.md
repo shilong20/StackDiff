@@ -11,8 +11,8 @@ Training datasets, full evaluation sets, experiment logs, and model checkpoint f
 - `configs/sample/`: public unconditional sampling configs for the same four materials.
 - `configs/train/`: training templates for locally prepared source images.
 - `data/examples/<material>/`: small demo multilayer inputs named `0.png` through `4.png`.
-- `tools/synthetic_materials/`: optional synthetic STEM generator assets for the four materials.
-- `tools/res2_stacking_analysis/`: ReS2-specific stacking, slip, and twist analysis example.
+- `src/tools/synthetic_materials/`: optional synthetic STEM generator assets for the four materials.
+- `src/tools/res2_stacking_analysis/`: ReS2-specific stacking, slip, and twist analysis example.
 
 ## Installation
 
@@ -76,7 +76,7 @@ python src/core/scripts/image_train.py --config configs/train/ReS2.yml
 
 ## Synthetic Material Generator
 
-The optional generator lives under `tools/synthetic_materials/` and includes JSON/XYZ/mask assets for ReS2, MoS2, MoTe2, and TaS2.
+The optional generator lives under `src/tools/synthetic_materials/` and includes JSON/XYZ/mask assets for ReS2, MoS2, MoTe2, and TaS2.
 
 It depends on the external `incostem` executable from the official computem/temsim project:
 
@@ -85,7 +85,7 @@ https://sourceforge.net/projects/computem/files/
 `incostem` is not distributed with StackDiff. Place a local executable at:
 
 ```text
-tools/synthetic_materials/incostem
+src/tools/synthetic_materials/incostem
 ```
 
 or edit the material JSON and set `incostem_path` to an absolute path.
@@ -93,16 +93,16 @@ or edit the material JSON and set `incostem_path` to an absolute path.
 Generate synthetic bilayer PNGs:
 
 ```bash
-python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/ReS2.json
-python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/MoS2.json
-python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/MoTe2.json
-python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/TaS2.json
+python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/ReS2.json
+python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/MoS2.json
+python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/MoTe2.json
+python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/TaS2.json
 ```
 
 To also export ground-truth label files:
 
 ```bash
-MOIRE_SAVE_LABELS=1 python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/ReS2.json
+MOIRE_SAVE_LABELS=1 python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/ReS2.json
 ```
 
 ## ReS2 Stacking Analysis Example
@@ -112,7 +112,7 @@ The stacking-analysis tools are ReS2-specific examples. They demonstrate atom de
 If you have one folder per bilayer sample with files named `*_0.png` and `*_1.png`, run:
 
 ```bash
-python tools/res2_stacking_analysis/classify_bilayers.py \
+python src/tools/res2_stacking_analysis/classify_bilayers.py \
   --root path/to/bilayer_folders \
   --out_csv outputs/res2_stacking.csv
 ```
@@ -120,7 +120,7 @@ python tools/res2_stacking_analysis/classify_bilayers.py \
 To compute interlayer quantities from the same folder tree:
 
 ```bash
-python tools/res2_stacking_analysis/analyze_interlayer.py \
+python src/tools/res2_stacking_analysis/analyze_interlayer.py \
   --root path/to/bilayer_folders \
   --out_csv outputs/res2_interlayer.csv \
   --stacking_csv outputs/res2_stacking.csv \

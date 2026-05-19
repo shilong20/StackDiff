@@ -1,7 +1,7 @@
 """
 Purpose: Run the single-image ReS2 analysis pipeline from atom detection through Re4-cycle extraction, chain-direction estimation, da/db vectors, and origin selection. It returns a JSON-serializable result dictionary.
-Related files: tools/res2_stacking_analysis/atoms.py, tools/res2_stacking_analysis/cycles.py, tools/res2_stacking_analysis/centroid_chain.py, and tools/res2_stacking_analysis/classify_bilayers.py.
-CLI usage: This module is imported by tools/res2_stacking_analysis/classify_bilayers.py and is not intended to be executed directly.
+Related files: src/tools/res2_stacking_analysis/atoms.py, src/tools/res2_stacking_analysis/cycles.py, src/tools/res2_stacking_analysis/centroid_chain.py, and src/tools/res2_stacking_analysis/classify_bilayers.py.
+CLI usage: This module is imported by src/tools/res2_stacking_analysis/classify_bilayers.py and is not intended to be executed directly.
 """
 
 from __future__ import annotations
@@ -15,13 +15,13 @@ import numpy as np
 from PIL import Image
 from scipy.spatial import cKDTree
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from tools.res2_stacking_analysis.atoms import AtomDetectConfig, detect_atoms_from_image  # noqa: E402
-from tools.res2_stacking_analysis.centroid_chain import solve_re_chain_from_centroids  # noqa: E402
-from tools.res2_stacking_analysis.cycles import (  # noqa: E402
+from src.tools.res2_stacking_analysis.atoms import AtomDetectConfig, detect_atoms_from_image  # noqa: E402
+from src.tools.res2_stacking_analysis.centroid_chain import solve_re_chain_from_centroids  # noqa: E402
+from src.tools.res2_stacking_analysis.cycles import (  # noqa: E402
     _cycle_center,
     _cycle_edges,
     _cycle_score_re4,

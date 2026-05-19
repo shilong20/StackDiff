@@ -1,7 +1,7 @@
 """
 Purpose: Backend for the optional multi-material synthetic STEM generator. It builds bilayer structures, calls the external incostem executable, applies augmentations, and writes 128 x 128 PNG images plus optional labels.
-Related files: tools/synthetic_materials/generate.py, tools/synthetic_materials/configs/*.json, tools/synthetic_materials/structures/*.xyz, tools/synthetic_materials/masks/*.png, and tools/synthetic_materials/augment.py.
-CLI usage: Use python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/ReS2.json.
+Related files: src/tools/synthetic_materials/generate.py, src/tools/synthetic_materials/configs/*.json, src/tools/synthetic_materials/structures/*.xyz, src/tools/synthetic_materials/masks/*.png, and src/tools/synthetic_materials/augment.py.
+CLI usage: Use python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/ReS2.json.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ from PIL import Image
 DEFAULT_IMAGE_SIZE = 1024
 TARGET_SIZE = 128
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
+ROOT_DIR = Path(__file__).resolve().parents[3]
 SYS_SRC = ROOT_DIR / "src"
 if str(SYS_SRC) not in sys.path:
     sys.path.append(str(SYS_SRC))
@@ -318,7 +318,7 @@ def load_config(path: Path) -> BatchConfig:
         incostem_path=_as_path(base_dir, data["incostem_path"]),
 
         output_dir=_as_path(ROOT_DIR, data["output_dir"]),
-        mask_path=_as_path(ROOT_DIR, str(data.get("mask_path", "tools/synthetic_materials/masks/ReS2.png"))),
+        mask_path=_as_path(ROOT_DIR, str(data.get("mask_path", "src/tools/synthetic_materials/masks/ReS2.png"))),
         augment=augment,
         x_range=RangeSpec(
             float(data["x_range"]["start"]),

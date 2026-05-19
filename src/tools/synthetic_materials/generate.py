@@ -1,13 +1,13 @@
 """
 Generate synthetic bilayer STEM images from a material JSON configuration.
 
-Related files: tools/synthetic_materials/runner.py,
-tools/synthetic_materials/configs/*.json, tools/synthetic_materials/structures/*.xyz,
-tools/synthetic_materials/masks/*.png, and the external
-tools/synthetic_materials/incostem executable.
+Related files: src/tools/synthetic_materials/runner.py,
+src/tools/synthetic_materials/configs/*.json, src/tools/synthetic_materials/structures/*.xyz,
+src/tools/synthetic_materials/masks/*.png, and the external
+src/tools/synthetic_materials/incostem executable.
 
 Command-line usage:
-    python tools/synthetic_materials/generate.py --config tools/synthetic_materials/configs/ReS2.json
+    python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/ReS2.json
 
 Set MOIRE_SAVE_LABELS=1 to export per-image label npz files. Set
 MOIRE_SAVE_MONOLAYER=1 to additionally export per-layer images for debugging.
