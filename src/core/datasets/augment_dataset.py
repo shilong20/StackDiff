@@ -169,6 +169,8 @@ class TrainingAugmentIterableDataset(IterableDataset):
                 if self._save_enabled and self._save_dir:
                     self._save_patch(patch, img_path, worker_tag)
                 yield patch_tensor, {}
+            except (TypeError, ValueError, RuntimeError):
+                raise
             except Exception:
 
                 continue

@@ -9,7 +9,7 @@ Training datasets, full evaluation sets, experiment logs, and model checkpoint f
 - `src/main.py`: YAML-driven multilayer separation entry point.
 - `configs/separate/`: public separation configs for ReS2, MoS2, MoTe2, and TaS2.
 - `configs/sample/`: public unconditional sampling configs for the same four materials.
-- `configs/train/`: training templates for locally prepared source images.
+- `configs/train/`: training templates for local source images with on-the-fly augmentation.
 - `data/examples/<material>/`: small demo multilayer inputs named `0.png` through `4.png`.
 - `src/tools/synthetic_materials/`: optional synthetic STEM generator assets for the four materials.
 - `src/tools/res2_stacking_analysis/`: ReS2-specific stacking, slip, and twist analysis example.
@@ -57,7 +57,7 @@ Expected outputs for each input image include:
 
 For your own images, edit `paths.default_input` and `paths.default_output` in the relevant YAML file. If an input filename ends with a physical field-of-view suffix such as `sample-7.1x3.1.png`, auto-crop can infer a grid and crop/resize plan from that size when enabled in the config.
 
-## Sampling And Training Templates
+## Sampling And Training
 
 Generate unconditional samples from a released checkpoint:
 
@@ -68,11 +68,24 @@ python src/core/scripts/image_sample.py --config configs/sample/MoTe2.yml
 python src/core/scripts/image_sample.py --config configs/sample/TaS2.yml
 ```
 
-Training configs are templates for locally prepared source images. Before training, update the source-image and mask paths (`source_data.data_root` and `source_data.mask_path`) in `configs/train/<material>.yml`.
+Training uses local single-layer/source STEM images with on-the-fly augmentation. Full training source images are not included in this repository; prepare your own source images and mask, then update `source_data.data_root`, `source_data.mask_path`, and `source_data.mask_cache` in `configs/train/<material>.yml`.
+
+The default public templates use placeholder source-data paths:
+
+```text
+data/training_source/<material>
+```
+
+Run training with:
 
 ```bash
 python src/core/scripts/image_train.py --config configs/train/ReS2.yml
+python src/core/scripts/image_train.py --config configs/train/MoS2.yml
+python src/core/scripts/image_train.py --config configs/train/MoTe2.yml
+python src/core/scripts/image_train.py --config configs/train/TaS2.yml
 ```
+
+By default, augmented training patches are not saved. Set `save_samples.enable: true` to save preview PNGs under `save_samples.dir` for inspection. Checkpoints and logs are written under `train.output_dir`.
 
 ## Synthetic Material Generator
 

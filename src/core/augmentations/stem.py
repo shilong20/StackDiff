@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Purpose: Shared STEM image augmentation utilities for StackDiff training and synthetic-data generation. The functions apply geometric transforms, carbon-like background, cropping, flips, scan/Poisson/Gaussian noise, display normalization, and tensor scaling.
+Purpose: Shared STEM image augmentation utilities for StackDiff source-image training and synthetic-data generation. The functions apply geometric transforms, carbon-like background, cropping, flips, scan/Poisson/Gaussian noise, display normalization, and tensor scaling.
 Related files: src/core/datasets/augment_dataset.py and src/tools/synthetic_materials/runner.py.
 CLI usage: This module is imported by training and synthetic-generation entry points and is not intended to be executed directly.
 """

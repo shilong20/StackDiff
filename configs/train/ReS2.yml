@@ -1,23 +1,23 @@
 # Public ReS2 training configuration template.
-# Full training images are not included in this repository. Prepare a source
-# image directory and matching mask locally, then update the source-image and
-# mask paths below before launching training.
+# Prepare local single-layer/source STEM images and the matching mask before training.
 
 train:
-  data_dir: data/placeholder
   output_dir: outputs/train/ReS2
   resume_checkpoint: ""
   gpu: 0
+
   batch_size: 32
-  lr: 1e-4
   microbatch: -1
-  use_fp16: true
+  lr: 1e-4
   ema_rate: "0.9999"
   schedule_sampler: uniform
+
   log_interval: 10
   save_interval: 10000
   lr_anneal_steps: 200000
   max_steps: 200000
+
+  use_fp16: true
 
 model:
   image_size: 128
@@ -25,15 +25,18 @@ model:
   num_res_blocks: 2
   attention_resolutions: "32,16,8"
   dropout: 0.1
+
   class_cond: false
+  learn_sigma: true
+  use_fp16: true
   use_scale_shift_norm: true
   resblock_updown: true
+  use_new_attention_order: false
+
   num_heads: 4
   num_head_channels: -1
   num_heads_upsample: -1
-  learn_sigma: true
-  use_fp16: true
-  use_new_attention_order: false
+
   diffusion_steps: 1000
   noise_schedule: linear
   timestep_respacing: ""
@@ -47,8 +50,9 @@ source_data:
   data_root: data/training_source/ReS2
   mask_path: data/training_source/ReS2/mask.png
   mask_cache: data/training_source/ReS2/mask_cache.npz
+
   num_workers: 8
-  prefetch_factor: 2
+  prefetch_factor: 3
   pin_memory: true
   persistent_workers: true
 
@@ -101,5 +105,5 @@ augment:
 
 save_samples:
   enable: false
-  dir: data/training_preview/ReS2
+  dir: outputs/train/ReS2/saved_samples
   format: png

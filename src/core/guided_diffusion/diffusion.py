@@ -445,7 +445,7 @@ class Diffusion(object):
             for i in range(args.N):
                 expected_outputs.append(os.path.join(image_folder, f"{identifier_base}_{i}.png"))
             if args.deg == 'separate_sum':
-                expected_outputs.append(os.path.join(image_folder, f"{identifier_base}_conbine.png"))
+                expected_outputs.append(os.path.join(image_folder, f"{identifier_base}_combine.png"))
 
             for output_file in expected_outputs:
                 if not os.path.exists(output_file):
@@ -775,11 +775,11 @@ class Diffusion(object):
                 sum_layers = layers.sum(dim=0, keepdim=True)
                 y_pos = original_y[:1]
                 k_tensor, _, _ = resolve_superposition_k(sum_layers, y_pos, self.args)
-                conbine = torch.clamp(k_tensor * sum_layers, 0.0, 1.0)
-                conbine = conbine.squeeze(0).to('cuda')
+                combine = torch.clamp(k_tensor * sum_layers, 0.0, 1.0)
+                combine = combine.squeeze(0).to('cuda')
 
                 tvu.save_image(
-                        conbine, os.path.join(image_folder, f"{identifier_base}_conbine.png")
+                        combine, os.path.join(image_folder, f"{identifier_base}_combine.png")
                         )
 
     def svd_based_ddnm_plus(self, model, cls_fn):

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Purpose: Train a StackDiff diffusion checkpoint from locally prepared source images using the public YAML training template. Training writes checkpoints and logs under train.output_dir.
+Purpose: Train a StackDiff diffusion checkpoint from local single-layer/source STEM images with on-the-fly augmentation. Training writes checkpoints and logs under train.output_dir and can save augmented preview patches when save_samples.enable is true.
 Related files: configs/train/*.yml, src/core/datasets/augment_dataset.py, src/core/augmentations/stem.py, and src/core/guided_diffusion/train_util.py.
-CLI usage: python src/core/scripts/image_train.py --config configs/train/ReS2.yml (arguments: --config selects the training YAML; update source_data.data_root and source_data.mask_path first).
+CLI usage: python src/core/scripts/image_train.py --config configs/train/ReS2.yml (arguments: --config selects the training YAML; source_data.data_root and source_data.mask_path point to local source images and mask).
 """
 
 import argparse
@@ -28,11 +28,6 @@ from guided_diffusion.train_util import TrainLoop
 import torch
 
 
-def get_source_data_config(yaml_cfg):
-    """Return the preferred source-data config, with legacy online-key fallback."""
-    return yaml_cfg.get("source_data", yaml_cfg.get("online", {}))
-
-
 def main():
     parser = create_argparser()
     parser.add_argument("--config", type=str, default="", help="Path to a YAML training config; values override command-line defaults")
@@ -46,10 +41,10 @@ def main():
 
 
 
-    # train: { data_dir, output_dir, batch_size, lr, ema_rate, log_interval, save_interval, lr_anneal_steps, max_steps, microbatch, schedule_sampler, use_fp16 }
+    # train: { output_dir, batch_size, lr, ema_rate, log_interval, save_interval, lr_anneal_steps, max_steps, microbatch, schedule_sampler, use_fp16 }
 
     train_cfg = yaml_cfg.get("train", {})
-    source_data_cfg = get_source_data_config(yaml_cfg)
+    source_data_cfg = yaml_cfg.get("source_data", {})
     augment_cfg = yaml_cfg.get("augment", {})
     save_samples_cfg = yaml_cfg.get("save_samples", {})
     model_cfg = yaml_cfg.get("model", {})
@@ -123,10 +118,10 @@ def main():
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
 
     logger.log("creating data loader...")
-    data_root = source_data_cfg.get("data_root", "data/training_source")
-    mask_path = source_data_cfg.get("mask_path", os.path.join(data_root, "mask.png"))
     if not bool(source_data_cfg.get("enable", True)):
         raise ValueError("This public training entry expects source_data.enable=true in the YAML config.")
+    data_root = str(source_data_cfg.get("data_root", "data/training_source")).strip()
+    mask_path = str(source_data_cfg.get("mask_path", os.path.join(data_root, "mask.png"))).strip()
     data = load_training_data(
         data_root=data_root,
         mask_path=mask_path,
@@ -166,7 +161,6 @@ def main():
 
 def create_argparser():
     defaults = dict(
-        data_dir="",
         schedule_sampler="uniform",
         lr=1e-4,
         weight_decay=0.0,
