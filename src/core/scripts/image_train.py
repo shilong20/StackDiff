@@ -125,7 +125,6 @@ def main():
     data = load_training_data(
         data_root=data_root,
         mask_path=mask_path,
-        mask_cache=source_data_cfg.get("mask_cache"),
         batch_size=args.batch_size,
         image_size=args.image_size,
         augment_cfg=augment_cfg,

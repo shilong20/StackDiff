@@ -1,5 +1,5 @@
 # Public ReS2 training configuration template.
-# Prepare local single-layer/source STEM images and the matching mask before training.
+# Prepare pre-generated single-layer/source STEM simulation images and the matching mask before training.
 
 train:
   output_dir: outputs/train/ReS2
@@ -49,7 +49,6 @@ source_data:
   enable: true
   data_root: data/training_source/ReS2
   mask_path: data/training_source/ReS2/mask.png
-  mask_cache: data/training_source/ReS2/mask_cache.npz
 
   num_workers: 8
   prefetch_factor: 3
@@ -57,7 +56,7 @@ source_data:
   persistent_workers: true
 
 augment:
-  disable: [elastic]
+  disable: []
   elastic:
     alpha_ratio: [0.0, 0.2]
     sigma_ratio: 0.05

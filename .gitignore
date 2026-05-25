@@ -12,10 +12,13 @@ env/
 # Runtime outputs
 data/results/
 data/sample/
+data/training_source/*/*
+!data/training_source/*/mask.png
 outputs/
 logs/
 tmp/
 trash/
+zenodo_upload/
 src/core/sample/
 *.log
 

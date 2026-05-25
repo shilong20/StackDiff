@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Purpose: Batch-process folders of separated bilayer ReS2 images, estimate each layer origin and da/db vectors, and classify samples as slip, twist, flip_slip, flip_twist, or unknown. Outputs are CSV summaries and optional atom-point JSON files.
+Purpose: Batch-process folders of separated bilayer ReS2 images, estimate each layer origin and da/db vectors, and classify samples as slip, twist, flip_slip, flip_twist, or unknown. Outputs are CSV summaries and optional atom-point JSON files; when paths lack a physical-size tag, the da/db template-growth step uses the --sideA_A fallback.
 Related files: src/tools/res2_stacking_analysis/single_layer_lattice.py, src/tools/res2_stacking_analysis/atoms.py, src/tools/res2_stacking_analysis/cycles.py, and src/tools/res2_stacking_analysis/analyze_interlayer.py.
-CLI usage: python src/tools/res2_stacking_analysis/classify_bilayers.py --root outputs/ReS2 --out_csv outputs/res2_stacking.csv (arguments: --root=input folders; --out_csv=summary CSV; --atoms_out_dir=optional atom JSON directory).
+CLI usage: python src/tools/res2_stacking_analysis/classify_bilayers.py --root outputs/ReS2 --out_csv outputs/res2_stacking.csv (arguments: --root=input folders; --out_csv=summary CSV; --atoms_out_dir=optional atom JSON directory; --sideA_A=field-of-view side length in Angstrom, default 27.9).
 """
 
 from __future__ import annotations
@@ -118,6 +118,7 @@ def _analyze_one_folder(
     folder: Path,
     *,
     slip_thresh_deg: float,
+    sideA_A: Optional[float],
     atom_cfg: AtomDetectConfig,
     out_scale: float,
     atoms_out_dir: Optional[Path],
@@ -167,8 +168,24 @@ def _analyze_one_folder(
             }
         )
 
-    r0 = run_single_layer_lattice_pipeline(img0, out_scale=float(out_scale), atom_cfg=atom_cfg, use_highpass=atom_cfg.use_highpass, atoms_points_px=pts0, include_debug=False)
-    r1 = run_single_layer_lattice_pipeline(img1, out_scale=float(out_scale), atom_cfg=atom_cfg, use_highpass=atom_cfg.use_highpass, atoms_points_px=pts1, include_debug=False)
+    r0 = run_single_layer_lattice_pipeline(
+        img0,
+        out_scale=float(out_scale),
+        atom_cfg=atom_cfg,
+        use_highpass=atom_cfg.use_highpass,
+        atoms_points_px=pts0,
+        fallback_sideA_A=sideA_A,
+        include_debug=False,
+    )
+    r1 = run_single_layer_lattice_pipeline(
+        img1,
+        out_scale=float(out_scale),
+        atom_cfg=atom_cfg,
+        use_highpass=atom_cfg.use_highpass,
+        atoms_points_px=pts1,
+        fallback_sideA_A=sideA_A,
+        include_debug=False,
+    )
     if not bool(r0.get("ok", False)) or not bool(r1.get("ok", False)):
         out["reason"] = f"dadb_failed:0={r0.get('reason','')} 1={r1.get('reason','')}"
         return out
@@ -240,6 +257,7 @@ def main() -> int:
     ap.add_argument("--root", required=True, help="Root directory containing bilayer sample subfolders.")
     ap.add_argument("--out_csv", default="", help="Output CSV path. If omitted, a timestamped CSV is written under src/tools/res2_stacking_analysis/.")
     ap.add_argument("--slip_thresh_deg", type=float, default=5.0)
+    ap.add_argument("--sideA_A", type=float, default=27.9, help="Fallback field-of-view side length in Angstrom when image paths do not contain a size tag such as 2.79x2.79.")
     ap.add_argument("--out_scale", type=float, default=4.0, help="Coordinate scale for outputs. The default maps 128 px coordinates to 512 px.")
     ap.add_argument("--limit", type=int, default=0, help="Process only the first N subfolders; 0 means all.")
 
@@ -303,6 +321,7 @@ def main() -> int:
             _analyze_one_folder(
                 d,
                 slip_thresh_deg=float(args.slip_thresh_deg),
+                sideA_A=float(args.sideA_A),
                 atom_cfg=atom_cfg,
                 out_scale=float(args.out_scale),
                 atoms_out_dir=atoms_out_dir,

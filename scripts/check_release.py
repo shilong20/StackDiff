@@ -1,12 +1,19 @@
 """
-Purpose: Validate the StackDiff public release workspace for oversized files, private artifacts, local absolute paths, and non-public checkpoint references. The script prints release issues and exits with a non-zero status when cleanup is required.
-Related files: .gitignore, README.md, models/checkpoints/README.md, and configs/**/*.yml.
-CLI usage: python scripts/check_release.py (run from the repository root; no arguments are required).
+Purpose: Validate the Git-visible StackDiff public release workspace for
+oversized files, private artifacts, local absolute paths, and non-public
+checkpoint references. The script honors .gitignore by checking tracked files
+and unignored untracked files only, then prints release issues and exits with a
+non-zero status when cleanup is required.
+Related files: .gitignore, README.md, models/checkpoints/README.md, and
+configs/**/*.yml.
+CLI usage: python scripts/check_release.py (run from the repository root; no
+arguments are required).
 """
 
 from __future__ import annotations
 
 import sys
+import subprocess
 from pathlib import Path
 
 
@@ -47,13 +54,28 @@ def rel(path: Path) -> str:
 
 
 def iter_files() -> list[Path]:
-    files: list[Path] = []
-    for path in ROOT.rglob("*"):
-        if ".git" in path.parts:
-            continue
-        if path.is_file():
-            files.append(path)
-    return files
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(ROOT), "ls-files", "-co", "--exclude-standard", "-z"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        files: list[Path] = []
+        for raw in result.stdout.split(b"\0"):
+            if raw:
+                path = ROOT / raw.decode("utf-8")
+                if path.is_file():
+                    files.append(path)
+        return files
+    except Exception:
+        files = []
+        for path in ROOT.rglob("*"):
+            if ".git" in path.parts:
+                continue
+            if path.is_file():
+                files.append(path)
+        return files
 
 
 def is_public_runtime_config(path: Path) -> bool:
@@ -64,11 +86,11 @@ def is_public_runtime_config(path: Path) -> bool:
 def main() -> int:
     problems: list[str] = []
 
-    for path in ROOT.rglob("*"):
-        if path.is_dir() and path.name in FORBIDDEN_DIRS:
-            problems.append(f"forbidden directory: {rel(path)}")
-
     for path in iter_files():
+        for part in path.relative_to(ROOT).parts[:-1]:
+            if part in FORBIDDEN_DIRS:
+                problems.append(f"forbidden directory: {rel(path.parent)}")
+                break
         name = path.name
         suffixes = {s.lower() for s in path.suffixes}
         if path.stat().st_size > MAX_BYTES:

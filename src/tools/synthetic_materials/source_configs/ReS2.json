@@ -1,0 +1,115 @@
+{
+  "material": "ReS2",
+  "num": 45,
+  "seed": 42,
+  "structure_path": "../structures/ReS2.xyz",
+  "incostem_path": "../incostem",
+  "incostem_exclude_symbols": [
+    "S"
+  ],
+  "output_dir": "data/training_source/ReS2",
+  "mask_path": "data/training_source/ReS2/mask.png",
+  "image_size": {
+    "width": 1644,
+    "height": 1024
+  },
+  "simulator": {
+    "defocus_A": [
+      35.0
+    ],
+    "source_size_A": [
+      0.6
+    ],
+    "thermal_displacement_A": [
+      {
+        "value": 0.0,
+        "weight": 0.15
+      },
+      {
+        "value": 0.01,
+        "weight": 0.35
+      },
+      {
+        "value": 0.02,
+        "weight": 0.35
+      },
+      {
+        "value": 0.04,
+        "weight": 0.15
+      }
+    ]
+  },
+  "defect_presets": [
+    {
+      "name": "clean",
+      "rates": {
+        "Re": 0.0
+      },
+      "weight": 0.5
+    },
+    {
+      "name": "low",
+      "rates": {
+        "Re": 0.01
+      },
+      "weight": 0.3
+    },
+    {
+      "name": "medium",
+      "rates": {
+        "Re": 0.02
+      },
+      "weight": 0.15
+    },
+    {
+      "name": "high",
+      "rates": {
+        "Re": 0.04
+      },
+      "weight": 0.05
+    }
+  ],
+  "metadata": {
+    "purpose": "Generate pre-training single-layer/source STEM simulation images for the ReS2 training config.",
+    "source_generation_scope": "This source generator only applies simulator-level variations such as thermal displacement and defects. Crop, rotation, scan noise, display adjustment, and other training augmentations are applied later by configs/train/ReS2.yml during training.",
+    "observed_legacy_dataset": {
+      "image_count": 45,
+      "image_size": {
+        "width": 1644,
+        "height": 1024
+      },
+      "image_modes": {
+        "L": 45
+      },
+      "mask_size": {
+        "width": 1644,
+        "height": 1024
+      },
+      "thermal_displacement_A": [
+        0.01,
+        0.02,
+        0.04
+      ],
+      "defect_rates": {
+        "Re": [
+          0.0,
+          0.01
+        ]
+      },
+      "optimized_sampling_strategy": {
+        "thermal_displacement_A": {
+          "0.00": 0.15,
+          "0.01": 0.35,
+          "0.02": 0.35,
+          "0.04": 0.15
+        },
+        "defect_presets": {
+          "clean": 0.5,
+          "low": 0.3,
+          "medium": 0.15,
+          "high": 0.05
+        }
+      }
+    }
+  }
+}

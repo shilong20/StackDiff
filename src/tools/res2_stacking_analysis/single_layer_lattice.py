@@ -1,5 +1,5 @@
 """
-Purpose: Run the single-image ReS2 analysis pipeline from atom detection through Re4-cycle extraction, chain-direction estimation, da/db vectors, and origin selection. It returns a JSON-serializable result dictionary.
+Purpose: Run the single-image ReS2 analysis pipeline from atom detection through Re4-cycle extraction, chain-direction estimation, da/db vectors, and origin selection. It returns a JSON-serializable result dictionary, using a configurable field-of-view fallback when image paths do not contain a physical-size tag.
 Related files: src/tools/res2_stacking_analysis/atoms.py, src/tools/res2_stacking_analysis/cycles.py, src/tools/res2_stacking_analysis/centroid_chain.py, and src/tools/res2_stacking_analysis/classify_bilayers.py.
 CLI usage: This module is imported by src/tools/res2_stacking_analysis/classify_bilayers.py and is not intended to be executed directly.
 """
@@ -156,6 +156,7 @@ def _extract_cycles_one_image(
     theory_max_hop: int,
     max_components: int,
     no_intersect: bool,
+    fallback_sideA_A: Optional[float],
 ) -> Tuple[List[Tuple[int, int, int, int]], Dict[str, Any]]:
     """Internal helper."""
     P = np.asarray(pts, dtype=np.float64).reshape(-1, 2)
@@ -216,8 +217,13 @@ def _extract_cycles_one_image(
 
 
     sideA_A = _infer_sideA_A_from_highT1_path(img_path)
+    sideA_source = "path"
+    if sideA_A is None and fallback_sideA_A is not None and float(fallback_sideA_A) > 1e-6:
+        sideA_A = float(fallback_sideA_A)
+        sideA_source = "fallback"
     if sideA_A is None or float(sideA_A) <= 1e-6:
         use_theory_dadb = False
+        sideA_source = "none"
 
     used_global = np.zeros((P.shape[0],), dtype=bool)
     accepted_polys: List[List[np.ndarray]] = []
@@ -336,7 +342,18 @@ def _extract_cycles_one_image(
             _run_one(ncyc, sa, sb, {"seed": list(ncyc), "seed_score": float(ns), "seed_dbg": nsd, "swap_dbg": swap_dbg})
 
     cycles = [tuple(int(x) for x in c) for c in picked]
-    dbg = {"ok": True, "nn_med": float(nn_med), "dist_limit": float(dist_limit), "flip_filter": flip_dbg, "n_candidates": int(len(cand_keep)), "n_cycles": int(len(cycles)), "components": comps_dbg[:8], **dbg_enum}
+    dbg = {
+        "ok": True,
+        "nn_med": float(nn_med),
+        "dist_limit": float(dist_limit),
+        "flip_filter": flip_dbg,
+        "n_candidates": int(len(cand_keep)),
+        "n_cycles": int(len(cycles)),
+        "sideA_A": None if sideA_A is None else float(sideA_A),
+        "sideA_source": sideA_source,
+        "components": comps_dbg[:8],
+        **dbg_enum,
+    }
     return cycles, {"ok": True, "dbg": dbg, "seed_cycle": list(seed_cyc)}
 
 
@@ -359,6 +376,7 @@ def run_single_layer_lattice_pipeline(
     theory_max_hop: int = 3,
     max_components: int = 3,
     no_intersect: bool = True,
+    fallback_sideA_A: Optional[float] = 27.9,
     include_debug: bool = False,
 ) -> Dict[str, Any]:
     """Internal helper."""
@@ -409,6 +427,7 @@ def run_single_layer_lattice_pipeline(
             "min_distance_px": float(atom_cfg.min_distance_px),
             "max_points": int(atom_cfg.max_points),
         },
+        "fallback_sideA_A": None if fallback_sideA_A is None else float(fallback_sideA_A),
         "n_atoms": int(pts.shape[0]),
         "dbg_atoms": dbg_atoms_small,
     }
@@ -435,6 +454,7 @@ def run_single_layer_lattice_pipeline(
         theory_max_hop=int(theory_max_hop),
         max_components=int(max_components),
         no_intersect=bool(no_intersect),
+        fallback_sideA_A=fallback_sideA_A,
     )
     if not cyc_meta.get("ok", False) or not cycles:
         out["reason"] = cyc_meta.get("reason", "cycles_failed")

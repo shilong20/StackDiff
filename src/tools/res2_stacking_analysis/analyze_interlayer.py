@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Purpose: Analyze interlayer geometry for folders of separated bilayer ReS2 outputs. It reuses or runs the ReS2 stacking classifier, then reports slip shifts, da/db coordinate projections, and fine twist angles in a CSV file.
+Purpose: Analyze interlayer geometry for folders of separated bilayer ReS2 outputs. It reuses or runs the ReS2 stacking classifier, then reports slip shifts, da/db coordinate projections, and fine twist angles in a CSV file; --sideA_A is also passed to the classifier as the fallback field-of-view side length when sample names do not contain a physical-size tag.
 Related files: src/tools/res2_stacking_analysis/classify_bilayers.py, src/tools/res2_stacking_analysis/single_layer_lattice.py, and README.md.
 CLI usage: python src/tools/res2_stacking_analysis/analyze_interlayer.py --root outputs/ReS2 --out_csv outputs/res2_interlayer.csv (arguments: --root=input folders; --out_csv=analysis CSV; --force_stacking reruns stacking classification).
 """
@@ -327,6 +327,7 @@ def _run_stacking_pipeline_if_needed(
     stacking_atoms_dir: Path,
     limit: int,
     slip_thresh_deg: float,
+    sideA_A: float,
     out_scale: float,
     force_stacking: bool,
     use_highpass: Optional[bool],
@@ -353,6 +354,8 @@ def _run_stacking_pipeline_if_needed(
         str(stacking_atoms_dir),
         "--slip_thresh_deg",
         str(float(slip_thresh_deg)),
+        "--sideA_A",
+        str(float(sideA_A)),
         "--out_scale",
         str(float(out_scale)),
         "--bg_sigma",
@@ -497,6 +500,7 @@ def main() -> int:
         stacking_atoms_dir=stacking_atoms_dir,
         limit=int(args.limit),
         slip_thresh_deg=float(args.slip_thresh_deg),
+        sideA_A=float(args.sideA_A),
         out_scale=float(args.stacking_out_scale),
         force_stacking=bool(args.force_stacking),
         use_highpass=use_hp,

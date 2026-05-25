@@ -1,5 +1,5 @@
 # Public MoS2 training configuration template.
-# Prepare local single-layer/source STEM images and the matching mask before training.
+# Prepare pre-generated single-layer/source STEM simulation images and the matching mask before training.
 
 train:
   output_dir: outputs/train/MoS2
@@ -49,7 +49,6 @@ source_data:
   enable: true
   data_root: data/training_source/MoS2
   mask_path: data/training_source/MoS2/mask.png
-  mask_cache: data/training_source/MoS2/mask_cache.npz
 
   num_workers: 8
   prefetch_factor: 3
@@ -57,7 +56,7 @@ source_data:
   persistent_workers: true
 
 augment:
-  disable: []
+  disable: [carbon, edge_mask]
   elastic:
     alpha_ratio: [0.0, 0.2]
     sigma_ratio: 0.05
@@ -79,8 +78,8 @@ augment:
   rotate:
     range: [0, 360]
   crop:
-    side: [536, 1072]
-    safe_radius: 536
+    side: [268, 536]
+    safe_radius: 268
   flip:
     h_prob: 0.5
     v_prob: 0.5
@@ -89,10 +88,10 @@ augment:
     bg_min: 0.0
     bg_max: 0.05
   noise:
-    pixel_size_A_orig: 0.03
+    pixel_size_A_orig: 0.06
     beam_current_A: 3.0e-11
     dwell_time_s: [1.0e-6, 3.0e-6]
-    width_orig_px: 3442
+    width_orig_px: 1721
     sigma_jitter_A: [0.0, 0.1]
     line_freq_hz: 60.0
     phase_x: 0.0

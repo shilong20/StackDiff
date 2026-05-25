@@ -7,7 +7,7 @@ runtime:
 
 sampling:
   batch_size: 1
-  T_sampling: 100
+  T_sampling: 200
   time_travel:
     enable: true
     travel_length: 1

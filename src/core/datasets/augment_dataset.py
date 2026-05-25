@@ -67,7 +67,6 @@ class TrainingAugmentIterableDataset(IterableDataset):
         *,
         data_root: str,
         mask_path: str,
-        mask_cache: str | None,
         image_size: int,
         augment_cfg: Dict[str, Any],
         save_samples_cfg: Dict[str, Any] | None = None,
@@ -75,7 +74,6 @@ class TrainingAugmentIterableDataset(IterableDataset):
         super().__init__()
         self.data_root = data_root
         self.mask_path = mask_path
-        self.mask_cache = mask_cache
         self.image_size = int(image_size)
         self.augment_cfg = augment_cfg or {}
         self._paths: List[str] | None = None
@@ -96,33 +94,13 @@ class TrainingAugmentIterableDataset(IterableDataset):
         if self._save_enabled and self._save_dir:
             os.makedirs(self._save_dir, exist_ok=True)
 
-    def _load_mask_and_cache(self) -> Tuple[np.ndarray, np.ndarray]:
+    def _load_mask(self) -> Tuple[np.ndarray, np.ndarray]:
         if self._mask01 is not None and self._dist_map is not None:
-            return self._mask01, self._dist_map
-        if self.mask_cache and os.path.exists(self.mask_cache):
-            cache = np.load(self.mask_cache)
-            mask01 = cache.get("mask")
-            dist_map = cache.get("dist")
-            if mask01 is None or dist_map is None:
-                raise RuntimeError("Mask cache is missing required mask or distance-transform arrays.")
-            self._mask01 = mask01.astype(np.float32)
-            self._dist_map = dist_map.astype(np.float32)
             return self._mask01, self._dist_map
 
         mask_img = Image.open(self.mask_path).convert('L')
         mask01 = to_float01(mask_img)
         dist_map = distance_transform(mask01)
-        if self.mask_cache:
-            tmp_path = f"{self.mask_cache}.tmp.{os.getpid()}.npz"
-            np.savez_compressed(tmp_path, mask=mask01, dist=dist_map)
-            try:
-                os.replace(tmp_path, self.mask_cache)
-            except OSError:
-
-                try:
-                    os.remove(tmp_path)
-                except OSError:
-                    pass
         self._mask01 = mask01.astype(np.float32)
         self._dist_map = dist_map.astype(np.float32)
         return self._mask01, self._dist_map
@@ -138,7 +116,7 @@ class TrainingAugmentIterableDataset(IterableDataset):
             if not self._paths:
                 raise RuntimeError(f"No training images were found under {self.data_root}.")
         if self._augmentor is None:
-            mask01, dist_map = self._load_mask_and_cache()
+            mask01, dist_map = self._load_mask()
             self._augmentor = StemAugmentor(
                 mask01=mask01,
                 dist_map=dist_map,
@@ -203,7 +181,6 @@ def load_training_data(
     batch_size: int,
     image_size: int,
     augment_cfg: Dict[str, Any],
-    mask_cache: str | None = None,
     save_samples_cfg: Dict[str, Any] | None = None,
     num_workers: int = 4,
     pin_memory: bool = True,
@@ -214,7 +191,6 @@ def load_training_data(
     dataset = TrainingAugmentIterableDataset(
         data_root=data_root,
         mask_path=mask_path,
-        mask_cache=mask_cache,
         image_size=image_size,
         augment_cfg=augment_cfg,
         save_samples_cfg=save_samples_cfg,

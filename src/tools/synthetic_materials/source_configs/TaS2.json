@@ -1,0 +1,127 @@
+{
+  "material": "TaS2",
+  "num": 180,
+  "seed": 42,
+  "structure_path": "../structures/TaS2.xyz",
+  "incostem_path": "../incostem",
+  "incostem_exclude_symbols": [],
+  "output_dir": "data/training_source/TaS2",
+  "mask_path": "data/training_source/TaS2/mask.png",
+  "image_size": {
+    "width": 1696,
+    "height": 1024
+  },
+  "simulator": {
+    "defocus_A": [
+      35.0
+    ],
+    "source_size_A": [
+      0.6
+    ],
+    "thermal_displacement_A": [
+      {
+        "value": 0.0,
+        "weight": 0.15
+      },
+      {
+        "value": 0.01,
+        "weight": 0.35
+      },
+      {
+        "value": 0.02,
+        "weight": 0.35
+      },
+      {
+        "value": 0.04,
+        "weight": 0.15
+      }
+    ]
+  },
+  "defect_presets": [
+    {
+      "name": "clean",
+      "rates": {
+        "Ta": 0.0,
+        "S": 0.0
+      },
+      "weight": 0.5
+    },
+    {
+      "name": "low",
+      "rates": {
+        "Ta": 0.01,
+        "S": 0.01
+      },
+      "weight": 0.3
+    },
+    {
+      "name": "medium",
+      "rates": {
+        "Ta": 0.02,
+        "S": 0.02
+      },
+      "weight": 0.15
+    },
+    {
+      "name": "high",
+      "rates": {
+        "Ta": 0.04,
+        "S": 0.04
+      },
+      "weight": 0.05
+    }
+  ],
+  "metadata": {
+    "purpose": "Generate pre-training single-layer/source STEM simulation images for the TaS2 training config.",
+    "source_generation_scope": "This source generator only applies simulator-level variations such as thermal displacement and defects. Crop, rotation, scan noise, display adjustment, and other training augmentations are applied later by configs/train/TaS2.yml during training.",
+    "observed_legacy_dataset": {
+      "image_count": 180,
+      "image_size": {
+        "width": 1696,
+        "height": 1024
+      },
+      "image_modes": {
+        "L": 180
+      },
+      "mask_size": {
+        "width": 1696,
+        "height": 1024
+      },
+      "thermal_displacement_A": [
+        0.0,
+        0.02,
+        0.04
+      ],
+      "defect_rates": {
+        "Ta": [
+          0.0,
+          0.01,
+          0.02,
+          0.03,
+          0.04
+        ],
+        "S": [
+          0.0,
+          0.01,
+          0.02,
+          0.03,
+          0.04
+        ]
+      },
+      "optimized_sampling_strategy": {
+        "thermal_displacement_A": {
+          "0.00": 0.15,
+          "0.01": 0.35,
+          "0.02": 0.35,
+          "0.04": 0.15
+        },
+        "defect_presets": {
+          "clean": 0.5,
+          "low": 0.3,
+          "medium": 0.15,
+          "high": 0.05
+        }
+      }
+    }
+  }
+}
