@@ -241,6 +241,7 @@ python src/tools/res2_stacking_analysis/visualize_debug.py \
   --interlayer_csv outputs/analysis/ReS2/interlayer.csv \
   --out_dir outputs/analysis/ReS2/visualization
 ```
+
 ## Symbolic Regression for Image Superposition
 
 `src/tools/Symbolic-regression/` provides tools for extracting pixel-level intensity superposition formulas between monolayer and multilayer STEM images from simulated data. These tools are used to quantify how the gray value of a stacked multilayer image can be expressed as a symbolic function of the gray values of its constituent monolayer images.
@@ -262,6 +263,7 @@ DATABASE_PATH/
 │   └── data/
 └── bilayer/
     └── data/
+```
 
 For trilayer ReS2, the generated database contains:
 
@@ -275,6 +277,7 @@ DATABASE_PATH/
 │   └── data/
 └── trilayer/
     └── data/
+```
 
 ### Gray-value Extraction
 
@@ -282,17 +285,58 @@ DATABASE_PATH/
 
 ```text
 x, y, layer1_gray, layer2_gray, bilayer_gray
+```
+
+For trilayer ReS2, each sampled pixel is saved as:
+
+```text
+x, y, layer1_gray, layer2_gray, layer3_gray, trilayer_gray
+```
+
+Valid pixels are selected from local atomic-intensity regions, and the extracted gray-value tables are saved as CSV files for subsequent symbolic regression.
 
 ### Symbolic Regression
 
-`gray_regression_final.ipynb performs symbolic regression using PySR to learn analytical intensity superposition formulas from the extracted gray-value data.
+`gray_regression_final.ipynb` performs symbolic regression using PySR to learn analytical intensity superposition formulas from the extracted gray-value data.
 
-For bilayer ReS2, the regression target is: bilayer_gray = f(layer1_gray, layer2_gray)
+For bilayer ReS2, the regression target is:
 
-For trilayer ReS2, the regression target is: trilayer_gray = f(layer1_gray, layer2_gray, layer3_gray)
+```text
+bilayer_gray = f(layer1_gray, layer2_gray)
+```
+
+For trilayer ReS2, the regression target is:
+
+```text
+trilayer_gray = f(layer1_gray, layer2_gray, layer3_gray)
+```
 
 The regression results include the selected symbolic expression, prediction metrics, predicted-versus-true plots, and exported Python predictor functions.
 
+## Monolayer ReS2 Vacancy Defect Detection
+
+`src/tools/monolayer_defect_detection/` provides training and inference tools for Re vacancy defect detection in monolayer ReS2 STEM images. The task is formulated as binary semantic segmentation of defect-related regions.
+
+### Training
+
+The model is trained using paired STEM images and binary masks. Training can be launched with:
+
+```bash
+python train_pt.py --config ReS2_vacancy_detect.yml
+```
+The configuration file controls the model architecture, encoder, input image size, batch size, learning rate, checkpoint saving, and early stopping settings.
+
+### Inference
+
+`Predict_visual_batch.ipynb` performs batch inference using a trained checkpoint. Before running the notebook, update the checkpoint path, input directory, and output directory:
+
+```python
+CKPT_PATH = "path/to/checkpoint.ckpt"
+batch_root_dir = "path/to/input_images"
+batch_save_dir = "path/to/output_results"
+```
+
+The notebook outputs predicted defect masks, visualization images, and summary files for detected Re vacancy defects.
 
 ## License
 
