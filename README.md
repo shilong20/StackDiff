@@ -1,25 +1,28 @@
 # StackDiff
 
-StackDiff 是论文 **StackDiff: Human-like, physics-constrained unsupervised learning for picometer-accuracy layer-resolved stacking analysis** 的官方实现，提供 STEM 图像层分离、无条件采样、训练配置、synthetic STEM 数据生成工具，以及 ReS2 堆垛解析示例。
+StackDiff is the official implementation of the paper **StackDiff: Human-like, physics-constrained unsupervised learning for picometer-accuracy layer-resolved stacking analysis**. It provides tools for STEM image layer separation, unconditional sampling, training configuration, synthetic STEM data generation, symbolic regression for extracting image superposition formulas, ReS2 stacking analysis examples, and Re vacancy defect detection in monolayer ReS2.
 
-本仓库包含论文中四种材料的配置和小规模示例输入：
+This repository includes configurations and example inputs for various materials studied in the paper:
 
 ```text
-ReS2, MoS2, MoTe2, TaS2
+ReS2, MoS2, MoTe2, TaS2...
 ```
 
-预训练 checkpoint 和补充数据将通过 Zenodo 发布。
+Pretrained checkpoints and example training data will be available via Zenodo.
 
-## 内容概览
+## Overview
 
-- `src/main.py`：基于 YAML 配置的多层图像分离入口。
-- `configs/separate/`：四种材料的图像分离配置。
-- `configs/sample/`：四种材料的无条件采样配置。
-- `configs/train/`：四种材料的训练配置，使用预生成的单层/source STEM 图像并在训练时进行在线增强。
-- `data/examples/<material>/`：小规模演示输入，文件命名为 `0.png` 到 `4.png`。
-- `data/training_source/<material>/mask.png`：训练 source 图像生成与在线增强所需的 mask。
-- `src/tools/synthetic_materials/`：synthetic STEM 图像生成工具，以及四种材料的结构文件和生成配置。
-- `src/tools/res2_stacking_analysis/`：ReS2 专用的堆垛、slip 和 twist 解析示例。
+- `src/main.py`: Entry point for multilayer image separation based on YAML configuration files.
+- `configs/separate/`: Image separation configurations for different materials.
+- `configs/sample/`: Unconditional sampling configurations for different materials.
+- `configs/train/`: Training configurations for different materials, using pregenerated monolayer/source STEM images with online augmentation during training.
+- `data/examples/<material>/`: Small-scale demonstration inputs, with files named from `0.png` to `4.png`.
+- `data/training_source/<material>/mask.png`: Mask required for training source image generation and online augmentation.
+- `src/tools/synthetic_materials/`: Tools for synthetic STEM image generation, including structural files and generation configurations for different materials. These tools are used to generate simulated data for training diffusion models of monolayer van der Waals materials.
+- `src/tools/res2_stacking_analysis/`: ReS2-specific examples for stacking, slip, and twist analysis.
+- `src/tools/Symbolic-regression/`: Symbolic regression tools for extracting intensity superposition formulas between monolayer and multilayer images from simulated data.
+- `src/tools/monolayer_defect_detection/`: Model training and inference tools for Re vacancy defect detection in monolayer ReS2.
+
 
 ## 安装
 
@@ -40,6 +43,7 @@ models/checkpoints/ReS2/ema_0.9999_200000.pt
 models/checkpoints/MoS2/ema_0.9999_200000.pt
 models/checkpoints/MoTe2/ema_0.9999_200000.pt
 models/checkpoints/TaS2/ema_0.9999_200000.pt
+...
 ```
 
 请将下载后的 checkpoint 放到上述路径；默认配置文件已经指向这些位置。
@@ -52,13 +56,14 @@ python scripts/download_weights.py --material all
 
 ## 图像分离
 
-四种材料均提供默认示例输入。运行以下命令即可对 `data/examples/<material>/` 中的图像进行分离：
+以下为默认示例输入。运行以下命令即可对 `data/examples/<material>/` 中的图像进行分离：
 
 ```bash
 python src/main.py --config configs/separate/ReS2.yml
 python src/main.py --config configs/separate/MoS2.yml
 python src/main.py --config configs/separate/MoTe2.yml
 python src/main.py --config configs/separate/TaS2.yml
+...
 ```
 
 默认输出目录为：
@@ -82,7 +87,7 @@ paths:
   default_output: ...
 ```
 
-启用 auto-crop 时，若文件名包含物理视野后缀，例如 `sample-7.1x3.1.png`，程序会据此推断裁剪和 resize 设置。
+启用 auto-crop 时，若文件名包含物理视野后缀，例如 `sample-7.1x3.1.png`，代表该图像的物理尺寸为7.1 nm × 3.1 nm，程序会据此推断裁剪和 resize 设置。
 
 ## 无条件采样
 
@@ -93,6 +98,7 @@ python src/core/scripts/image_sample.py --config configs/sample/ReS2.yml
 python src/core/scripts/image_sample.py --config configs/sample/MoS2.yml
 python src/core/scripts/image_sample.py --config configs/sample/MoTe2.yml
 python src/core/scripts/image_sample.py --config configs/sample/TaS2.yml
+...
 ```
 
 采样输出目录由 `configs/sample/<material>.yml` 中的 `sample.output_dir` 指定。
