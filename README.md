@@ -8,7 +8,7 @@ This repository includes configurations and example inputs for various materials
 ReS2, MoS2, MoTe2, TaS2...
 ```
 
-Pretrained checkpoints and example training data will be available via Zenodo.
+Pretrained checkpoints and example training data will be available via Zenodo (10.5281/zenodo.20375934).
 
 ## Overview
 
