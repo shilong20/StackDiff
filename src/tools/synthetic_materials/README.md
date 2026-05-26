@@ -1,6 +1,6 @@
 # Synthetic Material STEM Generator
 
-This directory contains optional STEM simulation helpers for StackDiff. It supports the four public paper materials: ReS2, MoS2, MoTe2, and TaS2.
+This directory contains optional STEM simulation helpers for StackDiff. It supports these materials: ReS2, MoS2, MoTe2, and TaS2 and so on.
 
 The repository includes generator code, material JSON files, monolayer structure files, and safe-crop masks. The external `incostem` executable is not distributed with StackDiff.
 
@@ -40,6 +40,7 @@ python src/tools/synthetic_materials/generate_source.py --config src/tools/synth
 python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/MoS2.json
 python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/MoTe2.json
 python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/TaS2.json
+...
 ```
 
 Source-image generation writes PNG files, `mask.png`, `manifest.jsonl`, and `source_config_snapshot.json` under `data/training_source/<material>/`. This step only applies simulator-level variations such as thermal displacement and defects. It does not apply training-time crop, rotation, scan-noise, display, or edge-mask augmentation.
@@ -55,6 +56,7 @@ python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_ma
 python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/MoS2.json
 python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/MoTe2.json
 python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/TaS2.json
+...
 ```
 
 By default, generated PNG files are written to `outputs/generated/<material>_rotation`.
