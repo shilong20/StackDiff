@@ -1,11 +1,11 @@
 # StackDiff
 
-StackDiff is the official implementation of the paper **StackDiff: Human-like, physics-constrained unsupervised learning for picometer-accuracy layer-resolved stacking analysis**. It provides tools for STEM image layer decompostion, unconditional sampling, training configuration, simulated STEM data generation, symbolic regression for extracting image superposition formulas, ReS2 stacking analysis examples, and Re vacancy defect detection in monolayer ReS2.
+StackDiff is the official implementation of the paper **StackDiff: Human-like, physics-constrained unsupervised learning for picometer-accuracy layer-resolved stacking analysis**. It provides tools for STEM image layer decompostion, unconditional sampling, training configuration, simulated STEM data generation, symbolic regression for extracting image superposition formulas, stacking analysis examples, and defect detection in monolayer image.
 
 This repository includes configurations and example inputs for various materials studied in the paper:
 
 ```text
-ReS2, MoS2, MoTe2, TaS2...
+ReS2, MoS2, MoTe2, TaS2(H),TaS2(T),CrBr3...
 ```
 
 Pretrained checkpoints and example training data will be available via Zenodo ([10.5281/zenodo.20375934](https://doi.org/10.5281/zenodo.20375935)).
@@ -163,7 +163,7 @@ python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_ma
 python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/TaS2.json
 ```
 
-## ReS2 Stacking Analysis Example
+## Stacking Analysis Example
 
 `src/tools/res2_stacking_analysis/` provides ReS2-specific examples for stacking analysis, including:
 
