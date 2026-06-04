@@ -1,8 +1,8 @@
-# Public TaS2 unconditional sampling configuration.
+# Public 1T-TaS2 unconditional sampling configuration.
 
 paths:
-  model_path: models/checkpoints/TaS2/ema_0.9999_200000.pt
-  output_dir: outputs/sample/TaS2
+  model_path: models/checkpoints/1T-TaS2/ema_0.9999_200000.pt
+  output_dir: outputs/sample/1T-TaS2
 
 runtime:
   gpu: 0

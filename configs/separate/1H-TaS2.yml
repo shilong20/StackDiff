@@ -1,0 +1,38 @@
+# Public 1H-TaS2 layer-separation configuration.
+material: 1H-TaS2
+description: "1H-TaS2 multilayer STEM image separation"
+
+runtime:
+  gpu: 0
+
+sampling:
+  batch_size: 1
+  T_sampling: 200
+  time_travel:
+    enable: true
+    travel_length: 1
+    travel_repeat: 1
+
+separation:
+  num_layers: 2
+  method: separate_sum
+  eta: 0.85
+  sigma_y: 0.
+  simplified: true
+  adaptive_superposition: true
+  residual_debug: false
+
+processing:
+  auto_crop:
+    enabled: false
+    unit_size_range: [2.4, 4.8]
+  sliding_window: true
+
+  # Optional whitelist of input files relative to paths.default_input.
+  # selected_files:
+  #   - "0.png"
+
+paths:
+  model_checkpoint: "models/checkpoints/1H-TaS2/ema_0.9999_200000.pt"
+  default_input: "data/examples/1H-TaS2"
+  default_output: "outputs/separation/1H-TaS2"

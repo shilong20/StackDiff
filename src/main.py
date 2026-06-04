@@ -572,7 +572,7 @@ def main():
             }
 
 
-            if material in ['ReS2', 'MoS2', 'MoTe2', 'TaS2']:
+            if material in ['ReS2', 'MoS2', 'MoTe2', '1T-TaS2', '1H-TaS2']:
                 base_config['type'] = 'STEM_separate'
             elif material == 'Mixed':
                 base_config['type'] = 'STEM_separate_mixed'
@@ -582,7 +582,7 @@ def main():
 
         materials = parse_materials_from_name(config.get('material', 'ReS2'))
 
-        material_keywords = {'ReS2', 'MoS2', 'MoTe2', 'TaS2'}
+        material_keywords = {'ReS2', 'MoS2', 'MoTe2', '1T-TaS2', '1H-TaS2'}
         actual_materials = [m for m in materials if m in material_keywords]
 
 

@@ -40,14 +40,16 @@ _DEFAULT_BASIS_SYMBOL_BY_MATERIAL: dict[str, str] = {
     "res2": "Re",
     "mos2": "Mo",
     "mote2": "Mo",
-    "tas2": "Ta",
+    "1t-tas2": "Ta",
+    "1h-tas2": "Ta",
 }
 
 _DEFAULT_PERIOD_T1T2_A: dict[str, tuple[tuple[float, float], tuple[float, float]]] = {
     "res2": ((6.42, 0.0), (3.15, -5.71)),
     "mos2": ((3.18, 0.0), (1.59, -2.75)),
     "mote2": ((3.49, 0.0), (0.0, 6.37)),
-    "tas2": ((3.33, 0.0), (1.66, -2.88)),
+    "1t-tas2": ((3.33, 0.0), (1.66, -2.88)),
+    "1h-tas2": ((3.33, 0.0), (1.66, -2.88)),
 }
 
 from core.augmentations.stem import (  # noqa: E402

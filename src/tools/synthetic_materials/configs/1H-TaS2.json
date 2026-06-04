@@ -1,0 +1,138 @@
+{
+  "material": "1H-TaS2",
+  "num": 1000,
+  "pipeline_mode": "final",
+  "shift_basis": "t1t2",
+  "period": {
+    "mode": "infer"
+  },
+  "twist_period_deg": 60.0,
+  "lattice_basis_symbol": "Ta",
+  "structure_path": "../structures/1H-TaS2.xyz",
+  "incostem_path": "../incostem",
+  "incostem_exclude_symbols": [],
+  "output_dir": "outputs/generated/1H-TaS2_rotation",
+  "mask_path": "src/tools/synthetic_materials/masks/1H-TaS2.png",
+  "x_range": {
+    "start": 0.0,
+    "stop": 0.4,
+    "step": 0.0
+  },
+  "y_range": {
+    "start": 0.0,
+    "stop": 0.4,
+    "step": 0.0
+  },
+  "rotation_range": {
+    "start": 0.0,
+    "stop": 120.0,
+    "step": 0.0
+  },
+  "defect_rates_basis": [
+    0.0
+  ],
+  "seed": 42,
+  "augment": {
+    "disable": [
+      "carbon",
+      "edge_mask",
+      "elastic",
+      "perspective",
+      "display",
+      "noise"
+    ],
+    "elastic": {
+      "alpha_ratio": [
+        0.0,
+        0.1
+      ],
+      "sigma_ratio": 0.05
+    },
+    "perspective": {
+      "max_ratio": [
+        0.0,
+        0.005
+      ]
+    },
+    "carbon": {
+      "prob": 0.01,
+      "cover": [
+        0.3,
+        0.7
+      ],
+      "alpha": [
+        0.3,
+        0.5
+      ],
+      "sigma_mask": 100,
+      "sigma_field": 100,
+      "coarse_down": 100,
+      "focus_enable": true,
+      "focus_center": [
+        0.1,
+        0.9
+      ],
+      "focus_radius_ratio": [
+        0.3,
+        0.7
+      ],
+      "focus_gain": 5.0,
+      "morph_kernel": 11,
+      "morph_iter": 1
+    },
+    "rotate": {
+      "range": [
+        0,
+        360
+      ]
+    },
+    "crop": {
+      "side": [
+        420,
+        450
+      ],
+      "safe_radius": 420
+    },
+    "flip": {
+      "h_prob": 0.5,
+      "v_prob": 0.5
+    },
+    "edge_mask": {
+      "prob": 0.0005,
+      "bg_min": 0.0,
+      "bg_max": 0.05
+    },
+    "noise": {
+      "mode": "gaussian_only",
+      "pixel_size_A_orig": 0.12,
+      "beam_current_A": 3e-11,
+      "dwell_time_s": [
+        1e-06,
+        3e-06
+      ],
+      "width_orig_px": 3289,
+      "sigma_jitter_A": [
+        0.0,
+        0.2
+      ],
+      "line_freq_hz": 60.0,
+      "phase_x": 0.0,
+      "phase_y": 1.5707963267948966,
+      "gaussian_sigma": 0.05
+    },
+    "display": {
+      "gain": [
+        0.9,
+        1.1
+      ],
+      "bias": [
+        -0.0,
+        0.0
+      ],
+      "gamma": [
+        0.9,
+        1.1
+      ]
+    }
+  }
+}

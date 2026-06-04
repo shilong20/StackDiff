@@ -2,10 +2,10 @@
 
 StackDiff is the official implementation of the paper **StackDiff: Human-like, physics-constrained unsupervised learning for picometer-accuracy layer-resolved stacking analysis**. It provides tools for STEM image layer decompostion, unconditional sampling, training configuration, simulated STEM data generation, symbolic regression for extracting image superposition formulas, stacking analysis examples, and defect detection in monolayer image.
 
-This repository includes configurations and example inputs for various materials studied in the paper:
+This repository includes configurations and example inputs for supported public materials:
 
 ```text
-ReS2, MoS2, MoTe2, TaS2(H),TaS2(T),CrBr3...
+ReS2, MoS2, MoTe2, 1T-TaS2, 1H-TaS2, CrBr3
 ```
 
 Pretrained checkpoints and example training data will be available via Zenodo ([10.5281/zenodo.20375934](https://doi.org/10.5281/zenodo.20375935)).
@@ -18,7 +18,7 @@ Pretrained checkpoints and example training data will be available via Zenodo ([
 - `configs/train/`: Training configurations for different materials, using pregenerated monolayer/source STEM images with online augmentation during training.
 - `data/examples/<material>/`: Small-scale demonstration inputs, with files named from `0.png` to `4.png`.
 - `data/training_source/<material>/mask.png`: Mask required for training source image generation and online augmentation.
-- `src/tools/synthetic_materials/`: Tools for simulated STEM image generation, including structural files and generation configurations for different materials. These tools are used to generate simulated data for training diffusion models of monolayer van der Waals materials.
+- `src/tools/synthetic_materials/`: Source-image STEM simulation tools for training, including structures, masks, and source generation configurations.
 - `src/tools/res2_stacking_analysis/`: ReS2-specific examples for stacking, slip, and twist analysis.
 - `src/tools/Symbolic-regression/`: Symbolic regression tools for extracting intensity superposition formulas between monolayer and multilayer images from simulated data.
 - `src/tools/monolayer_defect_detection/`: Model training and inference tools for Re vacancy defect detection in monolayer ReS2.
@@ -40,8 +40,9 @@ Each material uses a recommended EMA checkpoint by default. After downloading th
 models/checkpoints/ReS2/ema_0.9999_200000.pt
 models/checkpoints/MoS2/ema_0.9999_200000.pt
 models/checkpoints/MoTe2/ema_0.9999_200000.pt
-models/checkpoints/TaS2/ema_0.9999_200000.pt
-...
+models/checkpoints/1T-TaS2/ema_0.9999_200000.pt
+models/checkpoints/1H-TaS2/ema_0.9999_200000.pt
+models/checkpoints/CrBr3/ema_0.9999_200000.pt
 ```
 
 Place the downloaded checkpoints in the paths listed above. The default configuration files already point to these locations.
@@ -60,8 +61,9 @@ The following commands use the default example inputs. Run the commands below to
 python src/main.py --config configs/separate/ReS2.yml
 python src/main.py --config configs/separate/MoS2.yml
 python src/main.py --config configs/separate/MoTe2.yml
-python src/main.py --config configs/separate/TaS2.yml
-...
+python src/main.py --config configs/separate/1T-TaS2.yml
+python src/main.py --config configs/separate/1H-TaS2.yml
+python src/main.py --config configs/separate/CrBr3.yml
 ```
 
 The default output directory is:
@@ -95,8 +97,9 @@ After downloading the checkpoint for the corresponding material, unconditional s
 python src/core/scripts/image_sample.py --config configs/sample/ReS2.yml
 python src/core/scripts/image_sample.py --config configs/sample/MoS2.yml
 python src/core/scripts/image_sample.py --config configs/sample/MoTe2.yml
-python src/core/scripts/image_sample.py --config configs/sample/TaS2.yml
-...
+python src/core/scripts/image_sample.py --config configs/sample/1T-TaS2.yml
+python src/core/scripts/image_sample.py --config configs/sample/1H-TaS2.yml
+python src/core/scripts/image_sample.py --config configs/sample/CrBr3.yml
 ```
 
 The sampling output directory is specified by `sample.output_dir` in `configs/sample/<material>.yml`.
@@ -120,14 +123,16 @@ Training can be launched with:
 python src/core/scripts/image_train.py --config configs/train/ReS2.yml
 python src/core/scripts/image_train.py --config configs/train/MoS2.yml
 python src/core/scripts/image_train.py --config configs/train/MoTe2.yml
-python src/core/scripts/image_train.py --config configs/train/TaS2.yml
+python src/core/scripts/image_train.py --config configs/train/1T-TaS2.yml
+python src/core/scripts/image_train.py --config configs/train/1H-TaS2.yml
+python src/core/scripts/image_train.py --config configs/train/CrBr3.yml
 ```
 
 Training checkpoints and logs will be written to the directory specified by `train.output_dir`.
 
 ## Simulated STEM Data Generation
 
-`src/tools/synthetic_materials/` provides optional tools for simulated STEM data generation, including JSON, XYZ, and mask assets for multiple materials. If the required material system is not included, users can prepare their own assets.
+`src/tools/synthetic_materials/` provides optional source-image STEM simulation tools for training, including source JSON, XYZ, and mask assets for multiple materials. The public toolchain covers only single-layer/source image generation before training.
 
 This generation tool depends on the external executable `incostem` provided by the computem/temsim project:
 
@@ -141,27 +146,22 @@ https://sourceforge.net/projects/computem/files/
 src/tools/synthetic_materials/incostem
 ```
 
-Alternatively, set `incostem_path` in the material JSON file to an absolute path.
+Alternatively, set `incostem_path` in the material source JSON file to an absolute path.
 
 Generate monolayer/source STEM images for training:
 
 ```bash
-python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/ReS2.json
-python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/MoS2.json
-python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/MoTe2.json
-python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/TaS2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/ReS2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/MoS2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/MoTe2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/1T-TaS2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/1H-TaS2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/CrBr3.json
 ```
 
 The source generator writes PNG images, `mask.png`, and `manifest.jsonl` under `data/training_source/<material>/`.
 
-Generate synthetic bilayer PNG images for image separation examples or evaluation:
-
-```bash
-python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/ReS2.json
-python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/MoS2.json
-python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/MoTe2.json
-python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_materials/configs/TaS2.json
-```
+Separation examples under `data/examples/<material>/` are small static demo inputs; their generation process is not part of the public source-image generation toolchain.
 
 ## Stacking Analysis Example
 
@@ -173,7 +173,7 @@ python src/tools/synthetic_materials/generate.py --config src/tools/synthetic_ma
 - Classification of twist, slip, flip-twist, and flip-slip configurations.
 - Visualization based on the analysis results.
 
-This stacking analysis tool is currently designed only for ReS2. For other materials, this repository provides configurations for separation, sampling, training, and synthetic data generation.
+This stacking analysis tool is currently designed only for ReS2. For other materials, this repository provides configurations for separation, sampling, training, and source-data generation.
 
 The analysis tool requires each separated bilayer sample to be placed in an independent folder containing a pair of separated layer images:
 

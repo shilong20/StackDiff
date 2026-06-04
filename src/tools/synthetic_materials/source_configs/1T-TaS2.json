@@ -1,12 +1,12 @@
 {
-  "material": "TaS2",
+  "material": "1T-TaS2",
   "num": 180,
   "seed": 42,
-  "structure_path": "../structures/TaS2.xyz",
+  "structure_path": "../structures/1T-TaS2.xyz",
   "incostem_path": "../incostem",
   "incostem_exclude_symbols": [],
-  "output_dir": "data/training_source/TaS2",
-  "mask_path": "data/training_source/TaS2/mask.png",
+  "output_dir": "data/training_source/1T-TaS2",
+  "mask_path": "data/training_source/1T-TaS2/mask.png",
   "image_size": {
     "width": 1696,
     "height": 1024
@@ -72,8 +72,8 @@
     }
   ],
   "metadata": {
-    "purpose": "Generate pre-training single-layer/source STEM simulation images for the TaS2 training config.",
-    "source_generation_scope": "This source generator only applies simulator-level variations such as thermal displacement and defects. Crop, rotation, scan noise, display adjustment, and other training augmentations are applied later by configs/train/TaS2.yml during training.",
+    "purpose": "Generate pre-training single-layer/source STEM simulation images for the 1T-TaS2 training config.",
+    "source_generation_scope": "This source generator only applies simulator-level variations such as thermal displacement and defects. Crop, rotation, scan noise, display adjustment, and other training augmentations are applied later by configs/train/1T-TaS2.yml during training.",
     "observed_legacy_dataset": {
       "image_count": 180,
       "image_size": {

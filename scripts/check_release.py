@@ -45,7 +45,9 @@ ALLOWED_CHECKPOINT_PATHS = {
     "models/checkpoints/ReS2/ema_0.9999_200000.pt",
     "models/checkpoints/MoS2/ema_0.9999_200000.pt",
     "models/checkpoints/MoTe2/ema_0.9999_200000.pt",
-    "models/checkpoints/TaS2/ema_0.9999_200000.pt",
+    "models/checkpoints/1T-TaS2/ema_0.9999_200000.pt",
+    "models/checkpoints/1H-TaS2/ema_0.9999_200000.pt",
+    "models/checkpoints/CrBr3/ema_0.9999_200000.pt",
 }
 
 

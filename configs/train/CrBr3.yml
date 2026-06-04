@@ -1,12 +1,12 @@
-# Public TaS2 training configuration template.
+# Public CrBr3 training configuration template.
 # Prepare pre-generated single-layer/source STEM simulation images and the matching mask before training.
 
 train:
-  output_dir: outputs/train/TaS2
+  output_dir: outputs/train/CrBr3
   resume_checkpoint: ""
   gpu: 0
 
-  batch_size: 48
+  batch_size: 56
   microbatch: -1
   lr: 1e-4
   ema_rate: "0.9999"
@@ -47,8 +47,8 @@ model:
 
 source_data:
   enable: true
-  data_root: data/training_source/TaS2
-  mask_path: data/training_source/TaS2/mask.png
+  data_root: data/training_source/CrBr3
+  mask_path: data/training_source/CrBr3/mask.png
 
   num_workers: 8
   prefetch_factor: 3
@@ -56,7 +56,7 @@ source_data:
   persistent_workers: true
 
 augment:
-  disable: [carbon, edge_mask]
+  disable: [edge_mask]
   elastic:
     alpha_ratio: [0.0, 0.2]
     sigma_ratio: 0.05
@@ -78,8 +78,8 @@ augment:
   rotate:
     range: [0, 360]
   crop:
-    side: [300, 450]
-    safe_radius: 300
+    side: [250, 400]
+    safe_radius: 250
   flip:
     h_prob: 0.5
     v_prob: 0.5
@@ -91,7 +91,7 @@ augment:
     pixel_size_A_orig: 0.12
     beam_current_A: 3.0e-11
     dwell_time_s: [1.0e-6, 3.0e-6]
-    width_orig_px: 1696
+    width_orig_px: 1712
     sigma_jitter_A: [0.0, 0.2]
     line_freq_hz: 60.0
     phase_x: 0.0
@@ -104,5 +104,5 @@ augment:
 
 save_samples:
   enable: false
-  dir: outputs/train/TaS2/saved_samples
+  dir: outputs/train/CrBr3/saved_samples
   format: png

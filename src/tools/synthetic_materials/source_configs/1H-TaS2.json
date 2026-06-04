@@ -1,0 +1,79 @@
+{
+  "material": "1H-TaS2",
+  "num": 180,
+  "seed": 42,
+  "structure_path": "../structures/1H-TaS2.xyz",
+  "incostem_path": "../incostem",
+  "incostem_exclude_symbols": [],
+  "output_dir": "data/training_source/1H-TaS2",
+  "mask_path": "data/training_source/1H-TaS2/mask.png",
+  "image_size": {
+    "width": 1723,
+    "height": 1024
+  },
+  "simulator": {
+    "defocus_A": [
+      35.0
+    ],
+    "source_size_A": [
+      0.6
+    ],
+    "thermal_displacement_A": [
+      {
+        "value": 0.0,
+        "weight": 0.15
+      },
+      {
+        "value": 0.01,
+        "weight": 0.35
+      },
+      {
+        "value": 0.02,
+        "weight": 0.35
+      },
+      {
+        "value": 0.04,
+        "weight": 0.15
+      }
+    ]
+  },
+  "defect_presets": [
+    {
+      "name": "clean",
+      "rates": {
+        "Ta": 0.0,
+        "S": 0.0
+      },
+      "weight": 0.5
+    },
+    {
+      "name": "low",
+      "rates": {
+        "Ta": 0.01,
+        "S": 0.01
+      },
+      "weight": 0.3
+    },
+    {
+      "name": "medium",
+      "rates": {
+        "Ta": 0.02,
+        "S": 0.02
+      },
+      "weight": 0.15
+    },
+    {
+      "name": "high",
+      "rates": {
+        "Ta": 0.04,
+        "S": 0.04
+      },
+      "weight": 0.05
+    }
+  ],
+  "metadata": {
+    "purpose": "Generate pre-training single-layer/source STEM simulation images for the 1H-TaS2 training config.",
+    "source_generation_scope": "This source generator only applies simulator-level variations such as thermal displacement and defects. Crop, rotation, scan noise, display adjustment, and other training augmentations are applied later by configs/train/1H-TaS2.yml during training.",
+    "image_size_note": "1H-TaS2 uses 1723 x 1024 because incostem naturally emits this size for the supplied 1H-TaS2 structure; the public masks are resized to this shape."
+  }
+}

@@ -1,7 +1,7 @@
 """
 Purpose: Download released StackDiff EMA checkpoints into the default paths used by the public material configs. The URL and checksum fields can be filled after uploading checkpoints to a public host.
 Related files: README.md, models/checkpoints/README.md, configs/separate/*.yml, configs/sample/*.yml, and scripts/check_release.py.
-CLI usage: python scripts/download_weights.py --material ReS2 (arguments: --material=ReS2/MoS2/MoTe2/TaS2/all; --force overwrites an existing checkpoint).
+CLI usage: python scripts/download_weights.py --material ReS2 (arguments: --material=ReS2/MoS2/MoTe2/1T-TaS2/1H-TaS2/CrBr3/all; --force overwrites an existing checkpoint).
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from urllib.request import urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MATERIALS = ("ReS2", "MoS2", "MoTe2", "TaS2")
+MATERIALS = ("ReS2", "MoS2", "MoTe2", "1T-TaS2", "1H-TaS2", "CrBr3")
 WEIGHTS = {
     material: {
         "path": f"models/checkpoints/{material}/ema_0.9999_200000.pt",
