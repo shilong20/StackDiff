@@ -1,138 +1,79 @@
 {
   "material": "CrBr3",
-  "num": 1000,
-  "pipeline_mode": "final",
-  "shift_basis": "t1t2",
-  "period": {
-    "mode": "infer"
-  },
-  "twist_period_deg": 180.0,
-  "lattice_basis_symbol": "Cr",
+  "num": 45,
+  "seed": 42,
   "structure_path": "../structures/CrBr3.xyz",
   "incostem_path": "../incostem",
   "incostem_exclude_symbols": [],
-  "output_dir": "outputs/generated/CrBr3_rotation",
-  "mask_path": "src/tools/synthetic_materials/masks/CrBr3.png",
-  "x_range": {
-    "start": 0.0,
-    "stop": 0.4,
-    "step": 0.0
+  "output_dir": "data/training_source/CrBr3",
+  "mask_path": "data/training_source/CrBr3/mask.png",
+  "image_size": {
+    "width": 1712,
+    "height": 1024
   },
-  "y_range": {
-    "start": 0.0,
-    "stop": 0.4,
-    "step": 0.0
-  },
-  "rotation_range": {
-    "start": 0.0,
-    "stop": 180.0,
-    "step": 0.0
-  },
-  "defect_rates_basis": [
-    0.0
-  ],
-  "seed": 42,
-  "augment": {
-    "disable": [
-      "carbon",
-      "edge_mask",
-      "elastic",
-      "perspective",
-      "display",
-      "noise"
+  "simulator": {
+    "defocus_A": [
+      35.0
     ],
-    "elastic": {
-      "alpha_ratio": [
-        0.0,
-        0.1
-      ],
-      "sigma_ratio": 0.05
+    "source_size_A": [
+      0.6
+    ],
+    "thermal_displacement_A": [
+      {
+        "value": 0.0,
+        "weight": 0.15
+      },
+      {
+        "value": 0.01,
+        "weight": 0.35
+      },
+      {
+        "value": 0.02,
+        "weight": 0.35
+      },
+      {
+        "value": 0.04,
+        "weight": 0.15
+      }
+    ]
+  },
+  "defect_presets": [
+    {
+      "name": "clean",
+      "rates": {
+        "Cr": 0.0,
+        "Br": 0.0
+      },
+      "weight": 0.5
     },
-    "perspective": {
-      "max_ratio": [
-        0.0,
-        0.005
-      ]
+    {
+      "name": "low",
+      "rates": {
+        "Cr": 0.01,
+        "Br": 0.01
+      },
+      "weight": 0.3
     },
-    "carbon": {
-      "prob": 0.01,
-      "cover": [
-        0.3,
-        0.7
-      ],
-      "alpha": [
-        0.3,
-        0.5
-      ],
-      "sigma_mask": 100,
-      "sigma_field": 100,
-      "coarse_down": 100,
-      "focus_enable": true,
-      "focus_center": [
-        0.1,
-        0.9
-      ],
-      "focus_radius_ratio": [
-        0.3,
-        0.7
-      ],
-      "focus_gain": 5.0,
-      "morph_kernel": 11,
-      "morph_iter": 1
+    {
+      "name": "medium",
+      "rates": {
+        "Cr": 0.02,
+        "Br": 0.02
+      },
+      "weight": 0.15
     },
-    "rotate": {
-      "range": [
-        0,
-        360
-      ]
-    },
-    "crop": {
-      "side": [
-        250,
-        400
-      ],
-      "safe_radius": 250
-    },
-    "flip": {
-      "h_prob": 0.5,
-      "v_prob": 0.5
-    },
-    "edge_mask": {
-      "prob": 0.0005,
-      "bg_min": 0.0,
-      "bg_max": 0.05
-    },
-    "noise": {
-      "mode": "gaussian_only",
-      "pixel_size_A_orig": 0.12,
-      "beam_current_A": 3e-11,
-      "dwell_time_s": [
-        1e-06,
-        3e-06
-      ],
-      "width_orig_px": 1712,
-      "sigma_jitter_A": [
-        0.0,
-        0.2
-      ],
-      "line_freq_hz": 60.0,
-      "phase_x": 0.0,
-      "phase_y": 1.5707963267948966,
-      "gaussian_sigma": 0.05
-    },
-    "display": {
-      "gain": [
-        0.9,
-        1.1
-      ],
-      "bias": [
-        -0.0,
-        0.0
-      ],
-      "gamma": [
-        0.9,
-        1.1
-      ]
+    {
+      "name": "high",
+      "rates": {
+        "Cr": 0.04,
+        "Br": 0.04
+      },
+      "weight": 0.05
     }
+  ],
+  "metadata": {
+    "purpose": "Generate pre-training single-layer/source STEM simulation images for the CrBr3 training config.",
+    "source_generation_scope": "This source generator only applies simulator-level variations such as thermal displacement and defects. Crop, rotation, scan noise, display adjustment, and other training augmentations are applied later by configs/train/CrBr3.yml during training.",
+    "image_size_note": "CrBr3 uses 1712 x 1024 because incostem naturally emits this size for the supplied CrBr3 structure when the input width is 1712; this keeps source PNGs aligned with the public mask without modifying the generator."
   }
 }

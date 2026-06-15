@@ -23,13 +23,9 @@ Alternatively, edit a JSON file under `configs/` and set `incostem_path` to an a
 
 ## Files
 
-- `generate.py`: command-line entry point.
 - `generate_source.py`: command-line entry point for pre-training source STEM images.
 - `source_runner.py`: source-image structure perturbation, simulator invocation, mask copying, and manifest writing.
-- `runner.py`: bilayer structure construction, simulator invocation, augmentation, and PNG writing.
-- Shared augmentation utilities are imported from `src/core/augmentations/stem.py`.
-- `configs/*.json`: material generation configurations.
-- `source_configs/*.json`: source-image generation configurations. They record the legacy source-image sizes and simulator-level source variations.
+- `configs/*.json`: source-image generation configurations. They record the legacy source-image sizes and simulator-level source variations.
 - `structures/*.xyz`: monolayer structure files.
 - `masks/*.png`: safe-crop masks.
 
@@ -38,12 +34,12 @@ Alternatively, edit a JSON file under `configs/` and set `incostem_path` to an a
 Generate source STEM images for training:
 
 ```bash
-python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/ReS2.json
-python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/MoS2.json
-python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/MoTe2.json
-python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/1T-TaS2.json
-python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/1H-TaS2.json
-python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/source_configs/CrBr3.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/ReS2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/MoS2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/MoTe2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/1T-TaS2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/1H-TaS2.json
+python src/tools/synthetic_materials/generate_source.py --config src/tools/synthetic_materials/configs/CrBr3.json
 ```
 
 Source-image generation writes PNG files, `mask.png`, `manifest.jsonl`, and `source_config_snapshot.json` under `data/training_source/<material>/`. This step only applies simulator-level variations such as thermal displacement and defects. It does not apply training-time crop, rotation, scan-noise, display, or edge-mask augmentation.

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Purpose: Shared STEM image augmentation utilities for StackDiff source-image training and synthetic-data generation. The functions apply geometric transforms, carbon-like background, cropping, flips, scan/Poisson/Gaussian noise, display normalization, and tensor scaling.
-Related files: src/core/datasets/augment_dataset.py and src/tools/synthetic_materials/runner.py.
-CLI usage: This module is imported by training and synthetic-generation entry points and is not intended to be executed directly.
+【作用概述】提供 StackDiff 训练数据管线使用的共享 STEM 图像增强函数，包括几何变换、carbon 背景、裁剪、翻转、扫描/泊松/高斯噪声、显示归一化和张量缩放；函数按调用方输入返回增强结果。
+【关联说明】关联文件：src/core/datasets/augment_dataset.py、src/tools/synthetic_materials/source_runner.py、configs/train/*.yml。
+【命令行用法】本模块由训练和 source 图像生成相关模块导入，不作为命令行入口直接执行。
 """
 
 from __future__ import annotations

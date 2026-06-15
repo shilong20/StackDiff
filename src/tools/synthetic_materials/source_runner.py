@@ -1,7 +1,7 @@
 """
-Purpose: Generate pre-training source STEM simulation images from monolayer structures. The runner builds one source structure per image, samples weighted thermal-displacement and defect-preset settings, calls the external incostem executable, copies the matching mask, and writes PNG images plus a JSONL manifest. Training-time crop/noise/display augmentations are handled later by configs/train/*.yml and are not applied here.
-Related files: src/tools/synthetic_materials/generate_source.py, src/tools/synthetic_materials/source_configs/*.json, src/tools/synthetic_materials/structures/*.xyz, data/training_source/*/mask.png, and configs/train/*.yml.
-CLI usage: This module is imported by src/tools/synthetic_materials/generate_source.py and is not intended to be executed directly.
+【作用概述】生成训练前使用的单层/source STEM 仿真大图：从单层结构采样热扰动和缺陷，调用外部 incostem，并写出 PNG、mask、manifest 和配置快照；训练时裁剪、噪声和显示增强由训练数据管线完成。
+【关联说明】关联文件：src/tools/synthetic_materials/generate_source.py、src/tools/synthetic_materials/configs/*.json、src/tools/synthetic_materials/structures/*.xyz、data/training_source/*/mask.png、configs/train/*.yml。
+【命令行用法】本模块由 generate_source.py 导入，不作为命令行入口直接执行。
 """
 
 from __future__ import annotations
@@ -9,19 +9,74 @@ from __future__ import annotations
 import json
 import random
 import shutil
+import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+from ase.data import atomic_numbers
 from ase.io import read
 from PIL import Image
 
-try:
-    from runner import ROOT_DIR, _as_path, _incostem_xyz_lines, _run_incostem
-except ModuleNotFoundError:
-    from .runner import ROOT_DIR, _as_path, _incostem_xyz_lines, _run_incostem
+ROOT_DIR = Path(__file__).resolve().parents[3]
+
+
+def _as_path(base_dir: Path, value: str) -> Path:
+    p = Path(value).expanduser()
+    if p.is_absolute():
+        return p
+    return (base_dir / p).resolve()
+
+
+def _incostem_xyz_lines(
+    atoms,
+    *,
+    exclude_symbols: set[str] | None = None,
+    no_show_s: bool = True,
+) -> str:
+    exclude_symbols = set() if exclude_symbols is None else set(exclude_symbols)
+    if no_show_s:
+        exclude_symbols.add("S")
+
+    symbols = atoms.get_chemical_symbols()
+    counts: dict[str, int] = {}
+    for symbol in symbols:
+        counts[symbol] = counts.get(symbol, 0) + 1
+
+    lengths = atoms.get_cell().lengths()
+    header = "".join([f"{k}{v}" for k, v in counts.items()]) + f"\t{len(atoms)}\n"
+    header += f"{float(lengths[0])}\t{float(lengths[1])}\t{float(lengths[2])}\n"
+
+    lines = []
+    for atom in atoms:
+        if atom.symbol in exclude_symbols:
+            continue
+        try:
+            znum = int(atomic_numbers[atom.symbol])
+        except Exception as exc:
+            raise ValueError(f"Unsupported atomic symbol for incostem: {atom.symbol}") from exc
+        x, y, z = atom.position
+        lines.append(f"{znum}\t{x}\t{y}\t{z}\t1\t0\t")
+    return header + "\n".join(lines) + "\n-1\n"
+
+
+def _run_incostem(incostem_path: Path, param_lines: str) -> str:
+    proc = subprocess.Popen(
+        [str(incostem_path)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    assert proc.stdin is not None
+    proc.stdin.write(param_lines)
+    proc.stdin.flush()
+    out = proc.communicate()[0]
+    if proc.returncode != 0:
+        raise RuntimeError(f"incostem failed with exit code {proc.returncode}:\n{out}")
+    return out
 
 
 @dataclass(frozen=True)

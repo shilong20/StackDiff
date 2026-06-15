@@ -1,6 +1,6 @@
 # StackDiff
 
-StackDiff is the official implementation of the paper **StackDiff: Human-like, physics-constrained unsupervised learning for picometer-accuracy layer-resolved stacking analysis**. It provides tools for STEM image layer decompostion, unconditional sampling, training configuration, simulated STEM data generation, symbolic regression for extracting image superposition formulas, stacking analysis examples, and defect detection in monolayer image.
+StackDiff is the official implementation of the paper **StackDiff: Human-like, physics-constrained unsupervised learning for picometer-accuracy layer-resolved stacking analysis**. It provides tools for STEM image layer decomposition, unconditional sampling, training configuration, source-image synthetic STEM data generation, symbolic regression for extracting image superposition formulas, stacking analysis examples, and monolayer defect detection.
 
 This repository includes configurations and example inputs for supported public materials:
 
