@@ -25,7 +25,8 @@ separation:
 processing:
   auto_crop:
     enabled: true
-    unit_size_range: [2.4, 4.8]
+    # Training crop FOV derived from 372-744 px source crops: 2.536-5.074 nm.
+    unit_size_range: [2.536, 5.074]
   sliding_window: true
 
   # Optional whitelist of input files relative to paths.default_input.

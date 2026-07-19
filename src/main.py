@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Purpose: Command-line entry point for StackDiff layer separation from a YAML configuration. It reads input STEM images, loads the configured material checkpoint, runs diffusion-based separation, and writes layer outputs to disk.
-Related files: configs/separate/*.yml, src/core/datasets/__init__.py, src/core/guided_diffusion/diffusion.py, and src/core/utils/image_preprocessor.py.
-CLI usage: python src/main.py --config configs/separate/ReS2.yml (arguments: --config selects the YAML file; --verbose sets logging level).
+【作用概述】StackDiff 分层命令行入口：读取 YAML 配置和 STEM 图像，从以连字符或下划线连接的文件名尺寸标签规划自动裁整网格，加载权重执行扩散分层，并将各层及重建图写入输出目录。
+【关联说明】配置：configs/separate/*.yml；数据：src/core/datasets/__init__.py；扩散推理：src/core/guided_diffusion/diffusion.py；裁整实现：src/core/utils/image_preprocessor.py。
+【命令行用法】python src/main.py --config configs/separate/ReS2.yml（--config=必填配置路径；--verbose=日志级别，默认 info）。
 """
 
 import argparse
@@ -87,7 +87,7 @@ def setup_logging(verbose):
 
     return logger
 
-SIZE_PATTERN = re.compile(r"-\s*([0-9]+(?:\.[0-9]+)?)\s*[xX×]\s*([0-9]+(?:\.[0-9]+)?)")
+SIZE_PATTERN = re.compile(r"[-_]\s*([0-9]+(?:\.[0-9]+)?)\s*[xX×]\s*([0-9]+(?:\.[0-9]+)?)")
 GRID_UNIT_TOLERANCE = 1e-3
 
 def parse_image_size_from_filename(filename: str) -> Optional[Tuple[float, float]]:
@@ -129,13 +129,10 @@ def calculate_optimal_grid(
     height_nm = float(height_nm)
     width_nm = float(width_nm)
 
-    row_min = max(1, math.ceil(height_nm / max_unit))
-    row_max = max(row_min, int(math.floor(height_nm / min_unit))) if min_unit > 0 else row_min
-    col_min = max(1, math.ceil(width_nm / max_unit))
-    col_max = max(col_min, int(math.floor(width_nm / min_unit))) if min_unit > 0 else col_min
-
-    row_candidates = range(row_min, row_max + 1) if row_max >= row_min else range(1, 2)
-    col_candidates = range(col_min, col_max + 1) if col_max >= col_min else range(1, 2)
+    row_max = max(1, int(math.floor(height_nm / min_unit)))
+    col_max = max(1, int(math.floor(width_nm / min_unit)))
+    row_candidates = range(1, row_max + 1)
+    col_candidates = range(1, col_max + 1)
 
     best_valid = None
     best_valid_score = None
@@ -148,7 +145,8 @@ def calculate_optimal_grid(
         for col in col_candidates:
             if row <= 0 or col <= 0:
                 continue
-            unit_nm = min(height_nm / row, width_nm / col)
+            max_feasible_unit = min(height_nm / row, width_nm / col)
+            unit_nm = min(max_feasible_unit, max_unit)
             if unit_nm <= 0:
                 continue
             crop_height_nm = row * unit_nm
@@ -166,6 +164,8 @@ def calculate_optimal_grid(
             }
 
             in_range = (unit_nm >= min_unit - tol) and (unit_nm <= max_unit + tol)
+            if max_feasible_unit > max_unit + tol:
+                candidate["adjusted"] = True
             score = _grid_candidate_score(loss_area, unit_nm, row, col, (min_unit, max_unit))
 
             if in_range:
@@ -182,22 +182,7 @@ def calculate_optimal_grid(
 
     if fallback:
 
-        clipped_unit = min(max(fallback["unit_nm"], min_unit), max_unit)
-        clipped_unit = min(clipped_unit, height_nm / fallback["row"], width_nm / fallback["col"])
-        clipped_unit = max(clipped_unit, 0.0)
-        crop_height_nm = fallback["row"] * clipped_unit
-        crop_width_nm = fallback["col"] * clipped_unit
-        kept_area = crop_height_nm * crop_width_nm
-        loss_area = max(0.0, total_area - kept_area)
-        fallback.update(
-            {
-                "unit_nm": clipped_unit,
-                "crop_height_nm": crop_height_nm,
-                "crop_width_nm": crop_width_nm,
-                "loss_nm2": loss_area,
-                "adjusted": True,
-            }
-        )
+        fallback["adjusted"] = True
         return fallback
 
     return None
